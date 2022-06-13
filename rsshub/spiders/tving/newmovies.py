@@ -12,7 +12,7 @@ def parse(post):
     )
     item['link'] = post['vod_code']
     item['author'] = post['movie']['director'][0]
-    rls_date = str(post['movie']['service_open_date'])
+    rls_date = str(post['service_open_date'])
     item['pubDate'] = "{}-{}-{} {}:{}:{}".format(
         rls_date[:4], rls_date[4:-8], rls_date[6:-6],
         rls_date[8:-4], rls_date[10:-2], rls_date[-2:]

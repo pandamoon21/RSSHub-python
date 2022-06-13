@@ -230,6 +230,11 @@ def tving_newmovies():
     from rsshub.spiders.tving.newmovies import ctx
     return render_template('main/atom.xml', **filter_content(ctx()))
 
+@bp.route('/tving/series/')
+def tving_series():
+    from rsshub.spiders.tving.series import ctx
+    return render_template('main/atom.xml', **filter_content(ctx()))
+
 @bp.route('/seezn/newmovies/<string:menuid>')
 def seezn_newmovies(menuid=''):
     from rsshub.spiders.seezn.newmovies import ctx
@@ -239,6 +244,11 @@ def seezn_newmovies(menuid=''):
 def klikfilm_newmovies(section=''):
     from rsshub.spiders.klikfilm.newmovies import ctx
     return render_template('main/atom.xml', **filter_content(ctx(section)))
+
+@bp.route('/wavve/series/<string:order>')
+def wavve_series(order=''):
+    from rsshub.spiders.wavve.series import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(order)))
 
 @bp.route('/filter/')
 def rss_filter():

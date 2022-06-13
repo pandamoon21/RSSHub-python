@@ -4,9 +4,7 @@ from rsshub.utils import DEFAULT_HEADERS
 def parse(post):
     item = {}
     item['title'] = post['vod_name']['ko']
-    for img in post['movie']['image']:
-        if ".jpg" in img['url']:
-            imgurl = f"https://image.tving.com{img['url']}/dims/resize/F_webp,480"
+    imgurl = f"https://image.tving.com{post['movie']['image'][1]['url']}/dims/resize/F_webp,480"
     item['description'] = "{a}<br>{b}<br>{c}".format(
         a=post['movie']['story']['ko'],
         b=f"<img referrerpolicy='no-referrer' src={imgurl}>",

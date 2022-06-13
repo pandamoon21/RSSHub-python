@@ -220,6 +220,11 @@ def bjnews_channel(category=''):
     from rsshub.spiders.bjnews.channel import ctx
     return render_template('main/atom.xml', **filter_content(ctx(category)))
 
+@bp.route('/naver/newmovies/')
+def naver_newmovies():
+    from rsshub.spiders.naver.newmovies import ctx
+    return render_template('main/atom.xml', **filter_content(ctx())) 
+
 @bp.route('/filter/')
 def rss_filter():
     from rsshub.spiders.rssfilter.filter import ctx

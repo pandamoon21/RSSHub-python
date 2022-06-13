@@ -28,12 +28,13 @@ def ctx():
             "limit": "31",
             "_t": int(time.time()) * 1000
         },
-        headers=DEFAULT_HEADERS)
+        headers=DEFAULT_HEADERS
+    )
     posts = posts.json()['result']['productList']
     items = list(map(parse, posts))
     return {
         'title': 'SeriesON Naver New Movies',
-        'link': "https://serieson.naver.com/v2/movie/products/recommend",
+        'link': 'https://serieson.naver.com/v2/movie/products/recommend',
         'description': 'New Movies on Naver',
         'author': 'pandamoon21',
         'items': items

@@ -223,12 +223,22 @@ def bjnews_channel(category=''):
 @bp.route('/naver/newmovies/')
 def naver_newmovies():
     from rsshub.spiders.naver.newmovies import ctx
-    return render_template('main/atom.xml', **filter_content(ctx())) 
+    return render_template('main/atom.xml', **filter_content(ctx()))
 
 @bp.route('/tving/newmovies/')
 def tving_newmovies():
     from rsshub.spiders.tving.newmovies import ctx
-    return render_template('main/atom.xml', **filter_content(ctx())) 
+    return render_template('main/atom.xml', **filter_content(ctx()))
+
+@bp.route('/seezn/newmovies/<string:menuid>')
+def seezn_newmovies(menuid=''):
+    from rsshub.spiders.seezn.newmovies import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(menuid)))
+
+@bp.route('/klikfilm/newmovies/<string:section>')
+def klikfilm_newmovies(section=''):
+    from rsshub.spiders.klikfilm.newmovies import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(section)))
 
 @bp.route('/filter/')
 def rss_filter():

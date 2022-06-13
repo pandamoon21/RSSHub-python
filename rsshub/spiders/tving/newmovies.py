@@ -47,7 +47,7 @@ def ctx():
     items = list(map(parse, posts))
     return {
         'title': 'TVING New Movies',
-        'link': "https://www.tving.com/list/movie?order=new",
+        'link': "https://www.tving.com/contents/movie",
         'description': 'New Movies on TVING',
         'author': 'pandamoon21',
         'items': items

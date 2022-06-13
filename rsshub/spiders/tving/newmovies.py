@@ -11,7 +11,7 @@ def parse(post):
     )
     item['link'] = f"https://www.tving.com/contents/{post['vod_code']}"
     item['author'] = post['vod_code']
-    rls_date = post['movie']['release_date']    # 20220525
+    rls_date = str(post['movie']['release_date'])
     item['pubDate'] = "{}-{}-{}".format(rls_date[-2:], rls_date[4:-2], rls_date[:4])
     return item
 

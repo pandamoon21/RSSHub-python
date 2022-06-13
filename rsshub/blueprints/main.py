@@ -226,7 +226,7 @@ def naver_newmovies():
     return render_template('main/atom.xml', **filter_content(ctx())) 
 
 @bp.route('/tving/newmovies/')
-def naver_newmovies():
+def tving_newmovies():
     from rsshub.spiders.tving.newmovies import ctx
     return render_template('main/atom.xml', **filter_content(ctx())) 
 

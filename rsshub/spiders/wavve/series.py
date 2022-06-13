@@ -4,8 +4,8 @@ from rsshub.utils import DEFAULT_HEADERS
 def parse(post):
     item = {}
     title = post['title_list'][0]['text']
-    epsnum =  post['title_list'][1]['text'].split("회")[0]
-    item['title'] = f"{title} - E{epsnum:02}"
+    epsnum =  post['title_list'][1]['text'].split("회")[0].zfill(2)
+    item['title'] = f"{title} - E{epsnum}"
     imgurl = f"https://{post['thumbnail']}"
     item['description'] = "{a}<br>{b}".format(
         a=post['title_list'][1]['text'],

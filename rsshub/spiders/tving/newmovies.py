@@ -4,15 +4,21 @@ from rsshub.utils import DEFAULT_HEADERS
 def parse(post):
     item = {}
     item['title'] = post['vod_name']['ko']
-    imgurl = f"https://image.tving.com{post['movie']['image'][0]['url']}"
-    item['description'] = "{a}<br>{b}".format(
+    for img in post['movie']['image']:
+        if ".jpg" in img['url']:
+            imgurl = f"https://image.tving.com{img['url']}/dims/resize/F_webp,480"
+    item['description'] = "{a}<br>{b}<br>{c}".format(
         a=post['movie']['story']['ko'],
-        b=f"<img referrerpolicy='no-referrer' src={imgurl}>"
+        b=f"<img referrerpolicy='no-referrer' src={imgurl}>",
+        c=f"<a href='https://www.tving.com/contents/{post['vod_code']}'>Link movie</a>"
     )
-    item['link'] = f"https://www.tving.com/contents/{post['vod_code']}"
-    item['author'] = post['vod_code']
-    rls_date = str(post['movie']['release_date'])
-    item['pubDate'] = "{}-{}-{}".format(rls_date[-2:], rls_date[4:-2], rls_date[:4])
+    item['link'] = post['vod_code']
+    item['author'] = post['movie']['director'][0]
+    rls_date = str(post['movie']['service_open_date'])
+    item['pubDate'] = "{}-{}-{} {}:{}:{}".format(
+        rls_date[:4], rls_date[4:-8], rls_date[6:-6],
+        rls_date[8:-4], rls_date[10:-2], rls_date[-2:]
+    )
     return item
 
 

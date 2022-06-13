@@ -16,7 +16,8 @@ def ctx(section=''):
     DEFAULT_HEADERS.update({
         'Referer': 'https:/klikfilm.com',
         'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-        'X-Requested-With': 'XMLHttpRequest'
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-Forwarded-For': '103.60.9.114'
     })
     url = 'https://klikfilm.com/v4/core/core_actions_get/film_more.php'
     posts = requests.post(

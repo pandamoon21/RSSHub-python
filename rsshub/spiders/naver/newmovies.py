@@ -21,7 +21,7 @@ def ctx():
     DEFAULT_HEADERS.update({'Referer': 'https:/serieson.naver.com'})
     import json
     url = 'https://apis.naver.com/seriesOnWeb/serieson-web/v1/movie/recommend/products'
-    posts = requests.post(
+    posts = requests.get(
         url=url,
         params={
             "offset": "0",

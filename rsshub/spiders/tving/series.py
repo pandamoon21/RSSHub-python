@@ -19,8 +19,11 @@ def parse(post):
         d=f"<img referrerpolicy='no-referrer' src={imgurl2}>"
     )
     item['link'] = post['vod_code']
-    drc = post['program']['director']
-    item['author'] = ", ".join(drc) if len(drc) > 1 else drc[0]
+    drc = post['program'].get('director')
+    if drc:
+        item['author'] = ", ".join(drc) if len(drc) > 1 else drc[0]
+    else:
+        item['author'] = "pandamoon21"
     rls_date = str(post['service_open_date'])
     item['pubDate'] = "{}-{}-{} {}:{}:{}".format(
         rls_date[:4], rls_date[4:-8], rls_date[6:-6],

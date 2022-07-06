@@ -10,7 +10,7 @@ def parse(post):
     item['description'] = "{a}<br>{b}<br>{c}".format(
         a=post['content_subtitle'],
         b=f"<img referrerpolicy='no-referrer' src={imgurl}>",
-        c=f"<a href='{link}'>Link movie</a>"
+        c=f"<a href='{link}'>Link contents</a>"
     )
     item['link'] = link
     rls_date = str(post['content_regdate'])
@@ -53,9 +53,9 @@ def ctx(menuid=''):
     posts = posts.json()['data']['list_content'][::-1]
     items = list(map(parse, posts))
     return {
-        'title': 'Seezn New Movies',
+        'title': 'Seezn New Contents',
         'link': 'https://www.seezntv.com/category/102',
-        'description': 'New Movies on Seezn',
+        'description': 'New Contents on Seezn',
         'author': 'pandamoon21',
         'items': items
     }

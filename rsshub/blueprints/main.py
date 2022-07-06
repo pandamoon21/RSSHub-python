@@ -255,6 +255,11 @@ def wavve_series(order=''):
     from rsshub.spiders.wavve.series import ctx
     return render_template('main/atom.xml', **filter_content(ctx(order)))
 
+@bp.route('/coupangplay/contents')
+def coupangplay_contents():
+    from rsshub.spiders.coupangplay.contents import ctx
+    return render_template('main/atom.xml', **filter_content(ctx()))
+
 @bp.route('/filter/')
 def rss_filter():
     from rsshub.spiders.rssfilter.filter import ctx

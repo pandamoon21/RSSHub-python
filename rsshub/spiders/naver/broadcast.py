@@ -18,7 +18,7 @@ def parse(post):
     except IndexError:
         pass
     timestamp_ms = post['product']['meta']['releaseTimestamp']
-    item['pubDate'] = datetime.fromtimestamp(timestamp_ms / 1000).strftime('%d-%m-%Y %H:%M:%S')
+    item['pubDate'] = datetime.fromtimestamp(timestamp_ms / 1000).strftime('%Y-%m-%d %H:%M:%S')
     return item
 
 

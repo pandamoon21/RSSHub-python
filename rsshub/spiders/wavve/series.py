@@ -14,7 +14,7 @@ def parse(post):
     path = post['event_list'][1]['url']
     item['link'] = f"https://www.wavve.com{path}"
     date = post['title_list'][1]['text'].split(" ")[2]
-    item['pubDate'] = "{}-{}-{} 00:00:00".format(
+    item['pubDate'] = "{}-{}-{} 18:00:00".format(
         date[:4], date[5:-6], date[8:-3]
     )
     return item

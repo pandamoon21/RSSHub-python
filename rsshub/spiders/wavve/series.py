@@ -15,11 +15,11 @@ def parse(post):
     path = post['event_list'][1]['url']
     item['link'] = f"https://www.wavve.com{path}"
     try:
-        date = post['title_list'][1]['text'].split(" ")[2]
+        date = post['title_list'][1]['text'].split(" ")[2].split("(")[0]
     except (IndexError, Exception):
         date = post['title_list'][1]['text'].split("(")[0]
     item['pubDate'] = "{}-{}-{} 18:00:00".format(
-        date[:4], date[5:-6], date[8:-3]
+        date[:4], date[5:7], date[8:10]
     )
     return item
 

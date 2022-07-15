@@ -1,5 +1,4 @@
 import requests
-import json
 from rsshub.utils import DEFAULT_HEADERS
 
 def parse(post):

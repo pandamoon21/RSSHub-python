@@ -1,4 +1,5 @@
 import requests
+import json
 from rsshub.utils import DEFAULT_HEADERS
 
 def parse(post):
@@ -7,7 +8,10 @@ def parse(post):
     epsnum = post['episode']['frequency']
     item['title'] = f"{title} - E{epsnum:02}"
     path = post['program']['image'][-2]['url']
-    path2 = post['episode']['image'][0]['url']
+    try:
+        path2 = post['episode']['image'][0]['url']
+    except IndexError:
+        path2 = path
     imgurl = f"https://image.tving.com{path}/dims/resize/F_webp,480"
     imgurl2 = f"https://image.tving.com{path2}/dims/resize/F_webp,480"
     link = f"https://www.tving.com/contents/{post['vod_code']}"

@@ -270,6 +270,11 @@ def coupangplay_contents():
     from rsshub.spiders.coupangplay.contents import ctx
     return render_template('main/atom.xml', **filter_content(ctx()))
 
+@bp.route('/watcha/neweps')
+def watcha_neweps():
+    from rsshub.spiders.watcha.neweps import ctx
+    return render_template('main/atom.xml', **filter_content(ctx()))
+
 @bp.route('/filter/')
 def rss_filter():
     from rsshub.spiders.rssfilter.filter import ctx

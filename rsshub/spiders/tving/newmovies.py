@@ -21,7 +21,7 @@ def parse(post):
 
 
 def ctx():
-    DEFAULT_HEADERS.update({'Referer': 'https:/tving.com'})
+    DEFAULT_HEADERS.update({'Referer': 'https://tving.com'})
     apikey = "1e7952d0917d6aab1f0293a063697610"
     url = 'https://api.tving.com/v2/media/movies'
     posts = requests.get(

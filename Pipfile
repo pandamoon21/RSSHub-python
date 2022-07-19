@@ -18,6 +18,7 @@ flask-script = "*"
 icecream = "*"
 flask-analytics = "*"
 arrow = "1.2.2"
+httpx = "*"
 
 [dev-packages]
 coverage = "*"

@@ -245,6 +245,11 @@ def tving_series():
     from rsshub.spiders.tving.series import ctx
     return render_template('main/atom.xml', **filter_content(ctx()))
 
+@bp.route('/tving/entertainment/')
+def tving_enter():
+    from rsshub.spiders.tving.entertainment import ctx
+    return render_template('main/atom.xml', **filter_content(ctx()))
+
 @bp.route('/seezn/contents/<string:menuid>')
 def seezn_contents(menuid=''):
     from rsshub.spiders.seezn.contents import ctx

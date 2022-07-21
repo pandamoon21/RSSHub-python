@@ -1,4 +1,4 @@
-import requests
+import httpx
 
 def parse(post):
     item = {}
@@ -21,7 +21,7 @@ def parse(post):
 
 def ctx():
     url = 'https://api-mars.watcha.com/api/aio_staffmades/gsm6N0pw3N'
-    posts = requests.get(
+    posts = httpx.get(
         url=url,
         headers={
             'Origin': 'https://watcha.com',
@@ -44,12 +44,11 @@ def ctx():
             'User-Agent': 'Dalvik/2.1.0 (Linux; U; Android 9; Redmi Note 9 Pro Build/RKQ1.200826.002)/WatchaPlay-Android/1.9.89'
         },
         proxies={
-            'http': 'http://af34eda5-98eb-42e4-9fc5-3ae8957cf66c:Z05Wbhh0w0@seoul.wevpn.com:3128',
-            'https': 'http://af34eda5-98eb-42e4-9fc5-3ae8957cf66c:Z05Wbhh0w0@seoul.wevpn.com:3128'
+            'http://': 'http://af34eda5-98eb-42e4-9fc5-3ae8957cf66c:Z05Wbhh0w0@seoul.wevpn.com:3128',
+            'https://': 'http://af34eda5-98eb-42e4-9fc5-3ae8957cf66c:Z05Wbhh0w0@seoul.wevpn.com:3128'
         },
         verify=False
     )
-    print(posts.text)
     posts = posts.json()['result']['contents']['items']
     items = list(map(parse, posts))
     return {

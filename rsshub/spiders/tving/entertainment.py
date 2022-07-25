@@ -27,11 +27,12 @@ def parse(post):
         item['author'] = ", ".join(drc) if len(drc) > 1 else drc[0]
     else:
         item['author'] = "pandamoon21"
-    rls_date = str(post['service_open_date'])
-    item['pubDate'] = "{}-{}-{} {}:{}:{}".format(
-        rls_date[:4], rls_date[4:-8], rls_date[6:-6],
-        rls_date[8:-4], rls_date[10:-2], rls_date[-2:]
-    )
+    rls_date = str(post.get('service_open_date', 0))
+    if rls_date != "0":
+        item['pubDate'] = "{}-{}-{} {}:{}:{}".format(
+            rls_date[:4], rls_date[4:-8], rls_date[6:-6],
+            rls_date[8:-4], rls_date[10:-2], rls_date[-2:]
+        )
     return item
 
 

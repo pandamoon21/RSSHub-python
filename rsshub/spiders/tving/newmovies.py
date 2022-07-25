@@ -10,7 +10,7 @@ def parse(post):
         b=f"<img referrerpolicy='no-referrer' src={imgurl}>",
         c=f"<a href='https://www.tving.com/contents/{post['vod_code']}'>Link movie</a>"
     )
-    item['link'] = post['vod_code']
+    item['link'] = link
     item['author'] = post['movie']['director'][0]
     rls_date = str(post.get('service_open_date', 0))
     if rls_date != "0":

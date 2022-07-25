@@ -21,7 +21,7 @@ def parse(post):
         c=f"<img referrerpolicy='no-referrer' src={imgurl}>",
         d=f"<img referrerpolicy='no-referrer' src={imgurl2}>"
     )
-    item['link'] = post['vod_code']
+    item['link'] = link
     drc = post['program'].get('director')
     if drc:
         item['author'] = ", ".join(drc) if len(drc) > 1 else drc[0]

@@ -5,10 +5,11 @@ def parse(post):
     item = {}
     item['title'] = post['vod_name']['ko']
     imgurl = f"https://image.tving.com{post['movie']['image'][1]['url']}/dims/resize/F_webp,480"
+    link = f"https://www.tving.com/contents/{post['vod_code']}"
     item['description'] = "{a}<br>{b}<br>{c}".format(
         a=post['movie']['story']['ko'],
         b=f"<img referrerpolicy='no-referrer' src={imgurl}>",
-        c=f"<a href='https://www.tving.com/contents/{post['vod_code']}'>Link movie</a>"
+        c=f"<a href='{link}'>Link movie</a>"
     )
     item['link'] = link
     item['author'] = post['movie']['director'][0]

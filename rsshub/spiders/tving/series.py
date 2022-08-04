@@ -18,8 +18,8 @@ def parse(post):
     item['description'] = "{a}<br>{b}<br>{c}<br>{d}".format(
         a=f"<a href='{link}'>Link eps</a> - <a href='{link2}'>Link series</a>",
         b=post['episode']['synopsis']['ko'],
-        c=f"<img referrerpolicy='no-referrer' src={imgurl}>",
-        d=f"<img referrerpolicy='no-referrer' src={imgurl2}>"
+        c=f"<img referrerpolicy='no-referrer' src='{imgurl}'>",
+        d=f"<img referrerpolicy='no-referrer' src='{imgurl2}'>"
     )
     item['link'] = link
     drc = post['program'].get('director')

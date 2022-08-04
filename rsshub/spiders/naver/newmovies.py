@@ -8,7 +8,7 @@ def parse(post):
     item['title'] = post['product']['meta']['name']
     item['description'] = "{a}<br>{b}".format(
         a=post['product']['meta']['synopsis'],
-        b=f"<img referrerpolicy='no-referrer' src={post['product']['meta'].get('posterUrl')}>"
+        b=f"<img referrerpolicy='no-referrer' src='{post['product']['meta'].get('posterUrl')}'>"
     )
     item['link'] = f"https://serieson.naver.com/v2/movie/{post['viewSeq']}"
     try:

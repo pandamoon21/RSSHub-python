@@ -26,7 +26,7 @@ def parse(post):
     link = f"https://www.coupangplay.com/titles/{post['id']}"
     item['description'] = "{a}<br>{b}<br>{c}<br>{d}".format(
         a=f"Rating: {post['age_rating']} - {get_date(post['updated_at'])}",
-        b=f"<img referrerpolicy='no-referrer' src={imgurl}>",
+        b=f"<img referrerpolicy='no-referrer' src='{imgurl}'>",
         c=post['short_description'],
         d=f"<a href='{link}'>Link contents</a>"
     )

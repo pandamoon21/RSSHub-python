@@ -9,7 +9,7 @@ def parse(post):
     link = f"https://www.seezntv.com/vodDetail?content_id={post['content_id']}&menu_id={post['menu_id']}&series_id="
     item['description'] = "{a}<br>{b}<br>{c}".format(
         a=post['content_subtitle'],
-        b=f"<img referrerpolicy='no-referrer' src={imgurl}>",
+        b=f"<img referrerpolicy='no-referrer' src='{imgurl}'>",
         c=f"<a href='{link}'>Link contents</a>"
     )
     item['link'] = link

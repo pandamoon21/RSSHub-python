@@ -10,7 +10,7 @@ def parse(post):
     imgurl = f"https://{post['thumbnail']}"
     item['description'] = "{a}<br>{b}".format(
         a=post['title_list'][1]['text'],
-        b=f"<img referrerpolicy='no-referrer' src={imgurl}>"
+        b=f"<img referrerpolicy='no-referrer' src='{imgurl}'>"
     )
     path = post['event_list'][1]['url']
     item['link'] = f"https://www.wavve.com{path}"

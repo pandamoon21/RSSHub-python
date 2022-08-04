@@ -10,7 +10,7 @@ def parse(post):
     item['title'] = "{} - {}".format(post['product']['meta']['name'], time_broad)
     item['description'] = "{a}<br>{b}".format(
         a=post['product']['meta']['synopsis'],
-        b=f"<img referrerpolicy='no-referrer' src={post['product']['meta'].get('posterUrl')}>"
+        b=f"<img referrerpolicy='no-referrer' src='{post['product']['meta'].get('posterUrl')}'>"
     )
     item['link'] = f"https://serieson.naver.com/v2/broadcasting/{post['viewSeq']}"
     try:

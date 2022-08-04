@@ -12,7 +12,7 @@ def parse(post):
     item['description'] = "{a}<br>{b}<br>{c}".format(
         a=f"<a href='{link}'>Link contents</a>",
         b=title,
-        c=f"<img referrerpolicy='no-referrer' src={imgurl}>"
+        c=f"<img referrerpolicy='no-referrer' src='{imgurl}'>"
     )
     item['link'] = link
     item['author'] = "pandamoon21"

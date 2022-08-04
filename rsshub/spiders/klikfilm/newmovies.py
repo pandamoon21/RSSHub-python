@@ -6,7 +6,7 @@ def parse(post):
     item['title'] = f"{post['title']} - {post['type']}"
     item['description'] = "{a}<br>{b}".format(
         a=f"Access: {post['access']} - ID: {post['id']}",
-        b=f"<img referrerpolicy='no-referrer' src={post.get('cover')}>"
+        b=f"<img referrerpolicy='no-referrer' src='{post.get('cover')}'>"
     )
     item['link'] = f"https://klikfilm.com/v4/watch/{post['slug']}"
     return item

@@ -10,11 +10,13 @@ def parse(post):
         season = f"{post['meta']['season_number']:02}"
         country = post['meta']['country']
         judul_fix = f"{judul} S{season} - {year}"
+        prefix = "season"
     elif post['detail_type'] == "episode":
         judul = post['meta']['parent_title']['en']
         eps = str(post['meta']['episode_number']).zfill(3)
         country = "S.Korea"
         judul_fix = f"{judul} E{eps}"
+        prefix = "media"
     provider = post['meta']['provider']
     rating = post['meta']['rating_info']
     if len(post['meta']['tags']) > 0:
@@ -28,7 +30,7 @@ def parse(post):
     imgurl_pt = post['meta']['poster'].get('portrait')
     imgurl_ls = post['meta']['poster'].get('landscape')
     imgurl_lstv = post['meta']['poster'].get('landscape_tv')
-    link = f"https://www.kocowa.com/en_us/season/{post['id']}"
+    link = f"https://www.kocowa.com/en_us/{prefix}/{post['id']}"
     item['description'] = "{a}<br>{b}<br>{c}<br>{d}<br>{e}<br>{f}".format(
         a=f"<a href='{link}'>Link contents</a>",
         b=info,

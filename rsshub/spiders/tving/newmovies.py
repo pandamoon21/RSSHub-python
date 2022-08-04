@@ -8,7 +8,7 @@ def parse(post):
     link = f"https://www.tving.com/contents/{post['vod_code']}"
     item['description'] = "{a}<br>{b}<br>{c}".format(
         a=post['movie']['story']['ko'],
-        b=f"<img referrerpolicy='no-referrer' src={imgurl}>",
+        b=f"<img referrerpolicy='no-referrer' src={imgurl} />",
         c=f"<a href='{link}'>Link movie</a>"
     )
     item['link'] = link

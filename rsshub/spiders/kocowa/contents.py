@@ -58,14 +58,15 @@ def ctx(catalogId=''):
         "Referer": "https://www.kocowa.com/",
         "Accept": "application/json, text/plain, */*",
         "Content-Type": "application/json; charset=UTF-8",
-        "X-Platform-Country": "US"
+        "authorization": "1234567890",
+        "X-Forwarded-For": "20.150.219.190" # US IP
     })
-    url = 'https://prod.fms.kocowacon.com/fms/v01/fe/menu/get'
+    url = 'https://prod-fms.kocowa.com/api/v01/fe/menu/get'
     posts = requests.get(
         url=url,
         params={
             "id": catalogId,
-            "limit": "25"   # default 36
+            "limit": "36"   # default 36
         },
         headers=DEFAULT_HEADERS
     )

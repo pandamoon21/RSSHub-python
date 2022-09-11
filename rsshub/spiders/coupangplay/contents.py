@@ -35,7 +35,7 @@ def parse(post):
     return item
 
 
-def ctx(menuid=''):
+def ctx():
     DEFAULT_HEADERS.update({
         "Origin": "https://www.coupangplay.com",
         "Referer": "https://www.coupangplay.com/",

@@ -275,6 +275,11 @@ def watcha_neweps():
     from rsshub.spiders.watcha.neweps import ctx
     return render_template('main/atom.xml', **filter_content(ctx()))
 
+@bp.route('/amazon/kcontents')
+def amazon_kcontents():
+    from rsshub.spiders.amazon.kcontents import ctx
+    return render_template('main/atom.xml', **filter_content(ctx()))
+
 @bp.route('/kocowa/catalog/<string:catalogId>')
 def kocowa_contents(catalogId=''):
     from rsshub.spiders.kocowa.contents import ctx

@@ -1,12 +1,14 @@
 import re
 import requests
+import time
+from datetime import datetime
 from rsshub.utils import DEFAULT_HEADERS
 
 def parse(post):
     item = {}
     judul_tahun = re.findall(r"(?<=a-text-normal\">)(.*?)(?=</span>)", post)
     judul = judul_tahun[0].replace("&#x27;", "\'")
-    if len(judul) > 1:
+    if len(judul_tahun) > 1:
         tahun = judul_tahun[-1]
         judul += f" {tahun}"
     item['title'] = "{}".format(judul)
@@ -40,6 +42,10 @@ def parse(post):
         c=f"<img referrerpolicy='no-referrer' src='{imgurl}'>"
     )
     item['link'] = link
+    if len(tahun) == 0:
+        tahun = datetime.fromtimestamp(int(time.time())).strftime('%Y')
+    date = f"{tahun}-01-01 01:00:00"
+    item['pubDate'] = date
     return item
 
 

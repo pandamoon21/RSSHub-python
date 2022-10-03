@@ -280,6 +280,11 @@ def amazon_kcontents():
     from rsshub.spiders.amazon.kcontents import ctx
     return render_template('main/atom.xml', **filter_content(ctx()))
 
+@bp.route('/netflix/korean')
+def netflix_korean():
+    from rsshub.spiders.netflix.korean import ctx
+    return render_template('main/atom.xml', **filter_content(ctx()))
+
 @bp.route('/kocowa/catalog/<string:catalogId>')
 def kocowa_contents(catalogId=''):
     from rsshub.spiders.kocowa.contents import ctx

@@ -1,6 +1,5 @@
 import requests
-import time
-from datetime import datetime, date
+from datetime import date
 from rsshub.utils import DEFAULT_HEADERS
 
 def parse(post):
@@ -48,6 +47,7 @@ def ctx():
     url = "https://unogs.com/api/search"
     posts = requests.get(
         url=url,
+        https://unogs.com/api/search?limit=20&offset=0&query=&countrylist=21,23,26,29,33,36,307,45,39,327,331,334,265,337,336,269,267,357,378,65,67,390,392,268,400,408,412,447,348,270,73,34,425,432,436,46,78&country_andorunique=or&start_year=1900&end_year=2022&start_rating=&end_rating=10&genrelist=&type=&audio=Korean%20[Original]&subtitle=&audiosubtitle_andor=or&person=&filterby=&orderby=
         params={
             "limit": "20",
             "offset": "0",
@@ -59,7 +59,7 @@ def ctx():
             "start_rating": "",
             "end_rating": "10",
             "genrelist": "",
-            "type": "Movie",
+            "type": "",
             "audio": "Korean [Original]",
             "subtitle": "",
             "audiosubtitle_andor": "or",

@@ -24,7 +24,7 @@ def parse(post):
         countrylist = [x.split(":")[-1] for x in clist]
     countries = ", ".join(countrylist)
     item['description'] = "{a}<br>{b}".format(
-        a=f"NFID: {nfid}\nCountries: {countries}\n{synopsis}",
+        a=f"NFID: {nfid}<br>Countries: {countries}<br>{synopsis}",
         b=f"<img referrerpolicy='no-referrer' src='{imgurl}'>"
     )
     item['link'] = link

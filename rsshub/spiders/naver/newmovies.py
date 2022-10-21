@@ -35,7 +35,7 @@ def ctx():
     posts = requests.get(
         url=url,
         params={
-            "ero": True,
+            "ero": False,
             "orderType": "RECENT_REGISTRATION",
             "offset": 0,
             "limit": 31,

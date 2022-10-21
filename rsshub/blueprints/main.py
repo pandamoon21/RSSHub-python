@@ -265,6 +265,11 @@ def wavve_series(order=''):
     from rsshub.spiders.wavve.series import ctx
     return render_template('main/atom.xml', **filter_content(ctx(order)))
 
+@bp.route('/wavve/moviesplus')
+def wavve_moviesplus():
+    from rsshub.spiders.wavve.moviesplus import ctx
+    return render_template('main/atom.xml', **filter_content(ctx()))
+
 @bp.route('/coupangplay/contents')
 def coupangplay_contents():
     from rsshub.spiders.coupangplay.contents import ctx

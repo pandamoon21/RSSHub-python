@@ -6,16 +6,24 @@ from rsshub.utils import DEFAULT_HEADERS
 def parse(post):
     item = {}
     item['title'] = post['product']['meta']['name']
-    imgurl = post['product']['meta'].get('posterUrl')
-    item['description'] = "{a}<br>{b}".format(
-        a=post['product']['meta']['synopsis'],
-        b=f"<img referrerpolicy='no-referrer' src='{imgurl}'>"
+    imgurl = f"{post['product']['meta'].get('posterUrl')}?type=w320_r145"
+    runtime = post['product']['meta']['screeningTimeMinute']
+    age = post['product']['meta']['contentRating']['accessibleAge']
+    star = post['product']['meta']['starScore']
+    price = post["prices"][0]["price"]
+    pricetype = post["prices"][0]["itemCategory"]
+    item['description'] = "{a}<br>{b}<br>{c}".format(
+        a="Score: {} | Runtime: {} | Age: {} | Price: {}₩ - {}".format(
+            star, runtime, age, price, pricetype
+        ),
+        b=post['product']['meta']['synopsis'],
+        c=f"<img referrerpolicy='no-referrer' src='{imgurl}'>"
     )
     item['link'] = f"https://serieson.naver.com/v2/movie/{post['viewSeq']}"
     try:
         item['author'] = post['product']['meta'].get('directors', [])[0]
     except IndexError:
-        pass
+        item['author'] = "pandamoon21"
     timestamp_ms = post['product']['meta']['releaseTimestamp']
     item['pubDate'] = datetime.fromtimestamp(timestamp_ms / 1000).strftime('%Y-%m-%d %H:%M:%S')
     return item
@@ -23,13 +31,14 @@ def parse(post):
 
 def ctx():
     DEFAULT_HEADERS.update({'Referer': 'https:/serieson.naver.com'})
-    import json
-    url = 'https://apis.naver.com/seriesOnWeb/serieson-web/v1/movie/recommend/products'
+    url = 'https://apis.naver.com/seriesOnWeb/serieson-web/v2/movie/products'
     posts = requests.get(
         url=url,
         params={
-            "offset": "0",
-            "limit": "31",
+            "ero": True,
+            "orderType": "RECENT_REGISTRATION",
+            "offset": 0,
+            "limit": 31,
             "_t": int(time.time()) * 1000
         },
         headers=DEFAULT_HEADERS
@@ -38,7 +47,7 @@ def ctx():
     items = list(map(parse, posts))
     return {
         'title': 'SeriesON Naver New Movies',
-        'link': 'https://serieson.naver.com/v2/movie/products/recommend',
+        'link': 'https://serieson.naver.com/v2/movie/products',
         'description': 'New Movies on Naver',
         'author': 'pandamoon21',
         'items': items

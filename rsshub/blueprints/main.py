@@ -290,6 +290,11 @@ def netflix_korean():
     from rsshub.spiders.netflix.korean import ctx
     return render_template('main/atom.xml', **filter_content(ctx()))
 
+@bp.route('/viu/newtitles')
+def viu_newtitles():
+    from rsshub.spiders.viu.newtitles import ctx
+    return render_template('main/atom.xml', **filter_content(ctx()))
+
 @bp.route('/kocowa/catalog/<string:catalogId>')
 def kocowa_contents(catalogId=''):
     from rsshub.spiders.kocowa.contents import ctx

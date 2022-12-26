@@ -57,7 +57,18 @@ def ctx():
         }
     )
     # new contents curation only - row_name = 새로 올라온 콘텐츠
-    posts = next(x['data'] for x in posts.json()['data'] if x['row_id'] == '1bcb5138-edca-472b-93ab-58ec35e75d16')
+    # posts = next(x['data'] for x in posts.json()['data'] if x['row_id'] == '1bcb5138-edca-472b-93ab-58ec35e75d16')
+    skip_row = [
+        '6e7ed665-7f34-4928-a9ac-588da8b885c4', # Reco-Feed
+        'd24ea57b-ce91-4ba4-a25e-eab04922f12c', # Continue-Watching
+        'e66158de-1dc8-4516-84c7-76fcf93d22c9', # Mix Curation B
+        'f6a184c9-fc67-4259-b619-6bed56e14a69' # Explores-Categories
+    ]
+    all_data = []
+    for x in posts.json()['data']:
+        if x.get('data') and x['row_id'] not in skip_row:
+            all_data.extend(x['data'])
+    posts = all_data
     items = list(map(parse, posts))
     return {
         'title': 'CoupangPlay New Contents',

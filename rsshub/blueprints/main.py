@@ -255,6 +255,11 @@ def seezn_contents(menuid=''):
     from rsshub.spiders.seezn.contents import ctx
     return render_template('main/atom.xml', **filter_content(ctx(menuid)))
 
+@bp.route('/genietv/contents/<string:menuid>/<string:orderby>')
+def genietv_contents(menuid='', orderby=''):
+    from rsshub.spiders.genietv.movies import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(menuid,orderby)))
+
 @bp.route('/klikfilm/newmovies/<string:section>')
 def klikfilm_newmovies(section=''):
     from rsshub.spiders.klikfilm.newmovies import ctx
@@ -290,10 +295,10 @@ def netflix_korean():
     from rsshub.spiders.netflix.korean import ctx
     return render_template('main/atom.xml', **filter_content(ctx()))
 
-@bp.route('/viu/newtitles')
-def viu_newtitles():
+@bp.route('/viu/newtitles/<string:region>')
+def viu_newtitles(region=''):
     from rsshub.spiders.viu.newtitles import ctx
-    return render_template('main/atom.xml', **filter_content(ctx()))
+    return render_template('main/atom.xml', **filter_content(ctx(region)))
 
 @bp.route('/kocowa/catalog/<string:catalogId>')
 def kocowa_contents(catalogId=''):

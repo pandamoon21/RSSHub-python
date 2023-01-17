@@ -668,8 +668,22 @@
     <div class="card-body">
         <h4 class="card-title">RSS VIU New Titles</h4>
         <h6 class="text-muted">RSS VIU New Titles <a href="https://github.com/pandamoon21" target="_blank" class="badge badge-secondary">by pandamoon21</a></h6>
-        <p class="card-text">Example：<a href="https://rss-panda1.vercel.app/viu/newtitles" target="_blank">https://rss-panda1.vercel.app/viu/newtitles</a></p>
-        <p class="card-text">Routing：<code>/viu/newtitles</code></p>
+        <p class="card-text">Example：<a href="https://rss-panda1.vercel.app/viu/newtitles/sg" target="_blank">https://rss-panda1.vercel.app/viu/newtitles/sg</a></p>
+        <p class="card-text">Routing：<code>/viu/newtitles/<string:region></code></p>
+        <p class="card-text">region available: id, sg</p>
+    </div>
+</div>
+<br>
+<!--item info end-->
+
+<!--item info start-->
+<div class="card text-left">
+    <div class="card-body">
+        <h4 class="card-title">RSS GenieTV New Contents</h4>
+        <h6 class="text-muted">RSS GenieTV New Contents <a href="https://github.com/pandamoon21" target="_blank" class="badge badge-secondary">by pandamoon21</a></h6>
+        <p class="card-text">Example：<a href="https://rss-panda1.vercel.app/genietv/contents/59182/regdate" target="_blank">https://rss-panda1.vercel.app/genietv/contents/59182/regdate</a></p>
+        <p class="card-text">Routing：<code>genietv/contents/:menuid/:orderby</code></p>
+        <p class="card-text">catalogId: menuid e.g.: 59182 (Korean Movie), 58533 (Latest Movie) | orderby: regdate, hot, title</p>
     </div>
 </div>
 <br>

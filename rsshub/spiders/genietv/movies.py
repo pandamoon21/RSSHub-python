@@ -105,7 +105,7 @@ def ctx(menuid='', orderby=''):
         url=url,
         params={
             "menu_id": menuid,
-            "count": 30,
+            "count": 15,
             "page": "1",
             "orderby": orderby,
             "istest": "0",

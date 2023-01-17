@@ -119,6 +119,7 @@ def ctx(menuid='', orderby=''):
     )
     posts = posts.json()['data']['list'][0]['list_contents']
     items = list(map(parse, posts))
+    items = [x for x in items if x and x != {}]
     return {
         'title': 'GenieTV New Contents',
         'link': 'http://menu.megatvdnp.co.kr:38086',

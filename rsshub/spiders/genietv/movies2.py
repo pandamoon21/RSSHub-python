@@ -64,7 +64,7 @@ def parse(post):
     imgurl2 = post.get('still_cut_image', '')
     link = post['next_url']
     try:
-        contentid = re.search(r"content_id=(-\d+|\d+)", link).group(1)
+        contentid = re.search(r"(?:content_id|series_id)=(-\d+|\d+)", link).group(1)
     except Exception:
         return item
     # vod_detail = get_vod_detail(contentid, post['menu_id'])['data']

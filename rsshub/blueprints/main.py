@@ -257,7 +257,7 @@ def seezn_contents(menuid=''):
 
 @bp.route('/genietv/contents/<string:menuid>/<string:orderby>')
 def genietv_contents(menuid='', orderby=''):
-    from rsshub.spiders.genietv.movies import ctx
+    from rsshub.spiders.genietv.movies2 import ctx
     return render_template('main/atom.xml', **filter_content(ctx(menuid,orderby)))
 
 @bp.route('/klikfilm/newmovies/<string:section>')

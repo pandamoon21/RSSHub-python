@@ -25,10 +25,11 @@ def parse(post):
     imdb = post.get("imdbRating", "0")
     sinopsis = post["synopsis"]
     captions = post.get("captions", "No")
+    runtime = post.get("runtime", "0")
     withprime = "Yes" if post.get("withPrimeSign", False) else "No"
     link = f"https://primevideo.com/region/eu/detail/{asin}"
     item['description'] = "Info:<br>{}<br>{}<br>{}<br>{}<br>{}".format(
-        f"ASIN: {asin} <br>TitleID: {titleID} <br>With Prime: {withprime}",
+        f"ASIN: {asin} <br>TitleID: {titleID} <br>With Prime: {withprime} <br>Runtime: {runtime}",
         f"Cations: {captions} - Rating: {rating} - IMDB rating: {imdb}",
         f"<a href='{link}'>Link contents</a>",
         sinopsis,
@@ -47,15 +48,15 @@ def ctx():
         "Referer": "https://primevideo.com/",
     })
     url = 'https://www.primevideo.com/region/eu/api/searchDefault'
-    queryToken = "eyJ0eXBlIjoicXVlcnkiLCJuYXYiOnRydWUsInBpIjoiZGVmYXVsdCIsInNlYyI6ImNlbnRlciIsInN0eXBlIjoic2VhcmNoIiw"\
-                 "icXJ5IjoicF9uX2VudGl0eV90eXBlPVRWIFNob3cmaW5kZXg9ZXUtYW1hem9uLXZpZGVvLW90aGVyJmFkdWx0LXByb2R1Y3Q9MC"\
-                 "ZicT0oYW5kIGFtYXpvbl92aWRlb19zdGFydF9kYXRlOicxODB4LTB5JyAoYW5kIHB1YmxpY19yZWxlYXNlX2RhdGU6JzM2NXgtM"\
-                 "HgnIChub3Qgc3R1ZGlvOidBbWF6b24gU3R1ZGlvcycpKSkmcHZfb2ZmZXJzPUlEOklEOnN2b2Q6cHJpbWU6dm9kOi0xNjc0ODI1"\
-                 "MDAwOjE2NzQ4MjUwMDAtJnNlYXJjaC1hbGlhcz1pbnN0YW50LXZpZGVvJnFzLWF2X3JlcXVlc3RfdHlwZT00JnFzLWlzLXByaW1"\
-                 "lLWN1c3RvbWVyPTIiLCJydCI6IkJESGRDd3NtciIsInR4dCI6IkxhdGVzdCBUViIsIm9mZnNldCI6MCwibnBzaSI6MCwib3JlcS"\
-                 "I6ImQwODZlMjU2LTlkNGUtNGJmYy05ZDU1LTc3ZjJlMzc0MmFlNzoxNjc0ODI1NDYyMDAwIiwic3RyaWQiOiIxOjExS1VWQ0tSV"\
-                 "Fc4RTYyIyNNWlFXR1pMVU1WU0VHWUxTTjUyWEdaTE0iLCJvcmVxayI6ImpzRGowUWwwenJXQllEVHlIcThQbkRxbUc3ZnJKaTM1"\
-                 "cnh6RXpERXppckk9Iiwib3JlcWt2IjoxfQ=="
+    queryToken = ("eyJ0eXBlIjoicXVlcnkiLCJuYXYiOnRydWUsInBpIjoiZGVmYXVsdCIsInNlYyI6ImNlbnRlciIsInN0eXBlIjoic2VhcmNoIi"
+                  "wicXJ5IjoicF9uX2VudGl0eV90eXBlPU1vdmllJmluZGV4PWV1LWFtYXpvbi12aWRlby1vdGhlciZhZHVsdC1wcm9kdWN0PTAm"
+                  "YnE9KGFuZCAoYW5kIGFtYXpvbl92aWRlb19zdGFydF9kYXRlOic2MHgtMHknIChhbmQgcHVibGljX3JlbGVhc2VfZGF0ZTonMz"
+                  "Y1eC0weCcpIChub3QgdGl0bGU6J1xcXCJ0cmFpbGVyXFxcIicpKSAobm90IGF2X2tpZF9pbl90ZXJyaXRvcnk6J0lEJykpJnB2"
+                  "X29mZmVycz1JRDpJRDpzdm9kOnByaW1lOnZvZDotMTY3NDgzMjIwMDoxNjc0ODMyMjAwLSZzZWFyY2gtYWxpYXM9aW5zdGFudC"
+                  "12aWRlbyZxcy1hdl9yZXF1ZXN0X3R5cGU9NCZxcy1pcy1wcmltZS1jdXN0b21lcj0yIiwicnQiOiJ2Uko2QklzbXIiLCJ0eHQi"
+                  "OiJMYXRlc3QgbW92aWVzIiwib2Zmc2V0IjowLCJucHNpIjowLCJvcmVxIjoiNDRhODcxMGMtZWUzNS00YjM5LWFjZjctY2I1Mj"
+                  "U5YzcwZjlhOjE2NzQ4MzI0NDYwMDAiLCJzdHJpZCI6IjE6MTNQQjA1Nk1KMzJJNCMjTVpRV0daTFVNVlNFR1lMU041MlhHWkxN"
+                  "Iiwib3JlcWsiOiJqc0RqMFFsMHpyV0JZRFR5SHE4UG5EcW1HN2ZySmkzNXJ4ekV6REV6aXJJPSIsIm9yZXFrdiI6MX0=")
     kue = requests.get("https://pastebin.com/raw/AK5QftEx").text
     posts = requests.get(
         url=url,
@@ -64,7 +65,7 @@ def ctx():
                           "Chrome/109.0.0.0 Safari/537.36 Edg/109.0.1518.61",
             "viewport-width": "682",
             "x-amzn-client-ttl-seconds": "15",
-            "x-amzn-requestid": "F76HAQD94H9EP6WFQ453",
+            "x-amzn-requestid": "CRGQZSNJS5H21PM9F2QB",
             "x-requested-with": "XMLHttpRequest",
             "accept-encoding": "gzip, deflate, br",
             "cookie": kue,  # need this for non supported region, e.g. with US ip
@@ -86,7 +87,7 @@ def ctx():
             "isCrow": "1",
             "isElcano": "1",
             "useNodePlayer": "1",
-            "totalItems": "75",
+            "totalItems": "50",
             "refMarker": "atv_sr_infinite_scroll",
             "isHover2019": "1",
             "shouldShowPrimeSigns": "1",
@@ -98,9 +99,9 @@ def ctx():
     titles = posts.json()["items"]
     items = list(map(parse, titles))
     return {
-        'title': 'Primevideo Latest TV',
+        'title': 'Primevideo Latest Movie',
         'link': 'https://primevideo.com',
-        'description': 'Latest TV on Primevideo',
+        'description': 'Latest Movie on Primevideo',
         'author': 'pandamoon21',
         'items': items
     }

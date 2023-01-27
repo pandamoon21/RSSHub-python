@@ -295,6 +295,11 @@ def amazon_primetv():
     from rsshub.spiders.amazon.prime_tv import ctx
     return render_template('main/atom.xml', **filter_content(ctx()))
 
+@bp.route('/amazon/primemovie')
+def amazon_primemovie():
+    from rsshub.spiders.amazon.prime_movie import ctx
+    return render_template('main/atom.xml', **filter_content(ctx()))
+
 @bp.route('/netflix/korean')
 def netflix_korean():
     from rsshub.spiders.netflix.korean import ctx

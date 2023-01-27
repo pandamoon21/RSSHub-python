@@ -25,7 +25,7 @@ def parse(post):
     sinopsis = post["synopsis"]
     captions = post.get("captions", "No")
     withprime = "Yes" if post.get("withPrimeSign", False) else "No"
-    link = f"https://primevideo.com/region/fe/detail/{asin}"
+    link = f"https://primevideo.com/region/eu/detail/{asin}"
     item['description'] = "Info:<br>{}<br>{}<br>{}<br>{}<br>{}".format(
         f"ASIN: {asin} - TitleID: {titleID} - Prime: {withprime}",
         f"Cations: {captions} - Rating: {rating} - IMDB rating: {imdb}",
@@ -45,7 +45,7 @@ def ctx():
         "Origin": "https://primevideo.com",
         "Referer": "https://primevideo.com/",
     })
-    url = 'https://www.primevideo.com/region/fe/api/searchDefault'
+    url = 'https://www.primevideo.com/region/eu/api/searchDefault'
     queryToken = "eyJ0eXBlIjoicXVlcnkiLCJuYXYiOnRydWUsInBpIjoiZGVmYXVsdCIsInNlYyI6ImNlbnRlciIsInN0eXBlIjoic2VhcmNoIiw"\
                  "icXJ5IjoicF9uX2VudGl0eV90eXBlPVRWIFNob3cmaW5kZXg9ZXUtYW1hem9uLXZpZGVvLW90aGVyJmFkdWx0LXByb2R1Y3Q9MC"\
                  "ZicT0oYW5kIGFtYXpvbl92aWRlb19zdGFydF9kYXRlOicxODB4LTB5JyAoYW5kIHB1YmxpY19yZWxlYXNlX2RhdGU6JzM2NXgtM"\
@@ -55,6 +55,7 @@ def ctx():
                  "I6ImQwODZlMjU2LTlkNGUtNGJmYy05ZDU1LTc3ZjJlMzc0MmFlNzoxNjc0ODI1NDYyMDAwIiwic3RyaWQiOiIxOjExS1VWQ0tSV"\
                  "Fc4RTYyIyNNWlFXR1pMVU1WU0VHWUxTTjUyWEdaTE0iLCJvcmVxayI6ImpzRGowUWwwenJXQllEVHlIcThQbkRxbUc3ZnJKaTM1"\
                  "cnh6RXpERXppckk9Iiwib3JlcWt2IjoxfQ=="
+    kue = requests.get("https://pastebin.com/raw/AK5QftEx").text
     posts = requests.get(
         url=url,
         headers={
@@ -63,7 +64,18 @@ def ctx():
             "viewport-width": "682",
             "x-amzn-client-ttl-seconds": "15",
             "x-amzn-requestid": "F76HAQD94H9EP6WFQ453",
-            "x-requested-with": "XMLHttpRequest"
+            "x-requested-with": "XMLHttpRequest",
+            "accept-encoding": "gzip, deflate, br",
+            "cookie": kue,  # need this for non supported region, e.g. with US ip
+            "device-memory": "8",
+            "dnt": "1",
+            "downlink": "9.55",
+            "dpr": "1",
+            "ect": "4g",
+            "rtt": "100",
+            "sec-ch-device-memory": "8",
+            "sec-ch-dpr": "1",
+            'X-Forwarded-For': '0.0.0.0/0" ".'
         },
         params={
             "startIndex": "0",
@@ -79,7 +91,8 @@ def ctx():
             "shouldShowPrimeSigns": "1",
             "ie": "UTF8",
             "ref_": "atv_sr_infinite_scroll"
-        }
+        },
+        allow_redirects=True
     )
     titles = posts.json()["items"]
     items = list(map(parse, titles))

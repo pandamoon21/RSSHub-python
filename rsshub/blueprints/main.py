@@ -280,24 +280,9 @@ def coupangplay_contents():
     from rsshub.spiders.coupangplay.contents import ctx
     return render_template('main/atom.xml', **filter_content(ctx()))
 
-@bp.route('/watcha/neweps')
-def watcha_neweps():
-    from rsshub.spiders.watcha.neweps import ctx
-    return render_template('main/atom.xml', **filter_content(ctx()))
-
 @bp.route('/amazon/kcontents')
 def amazon_kcontents():
     from rsshub.spiders.amazon.kcontents import ctx
-    return render_template('main/atom.xml', **filter_content(ctx()))
-
-@bp.route('/amazon/primetv')
-def amazon_primetv():
-    from rsshub.spiders.amazon.prime_tv import ctx
-    return render_template('main/atom.xml', **filter_content(ctx()))
-
-@bp.route('/amazon/primemovie')
-def amazon_primemovie():
-    from rsshub.spiders.amazon.prime_movie import ctx
     return render_template('main/atom.xml', **filter_content(ctx()))
 
 @bp.route('/netflix/korean')

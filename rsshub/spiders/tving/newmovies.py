@@ -1,18 +1,52 @@
 import requests
 from rsshub.utils import DEFAULT_HEADERS
 
+audio_map = {
+    "00": "2.0 Audio",
+    "01": "5.1 Audio"
+}
+
+hdr_map = {
+    "00": "SDR",
+    "01": "HDR"
+}
+
 def parse(post):
     item = {}
     item['title'] = post['vod_name']['ko']
     imgurl = f"https://image.tving.com{post['movie']['image'][1]['url']}/dims/resize/F_webp,480"
     link = f"https://www.tving.com/contents/{post['vod_code']}"
-    item['description'] = "{a}<br>{b}<br>{c}".format(
-        a=post['movie']['story']['ko'],
-        b=f"<img referrerpolicy='no-referrer' src='{imgurl}'>",
-        c=f"<a href='{link}'>Link movie</a>"
+    movie_ = post['movie']
+    # movies details
+    duration = movie_.get('duration') or 0
+    drm = "DRM" if movie_['drm_yn'] == "Y" else ""
+    cine = "CINE" if movie_['cine_same_yn'] == "Y" else ""
+    first_open = "FIRST" if movie_['first_open_yn'] == "Y" else ""
+    direct = "DIRECT Ver" if movie_['direct_ver_yn'] == "Y" else ""
+    dubver = "DUB Ver" if movie_['dub_ver_yn'] == "Y" else ""
+    subver = "HC Ver" if movie_['subtitle_ver_yn'] == "Y" else ""
+    event = "EVENT" if movie_['event_yn'] == "Y" else ""
+    original = "TVING Original" if movie_['tving_original_yn'] == "Y" else ""
+    exclusive = "TVING Exclusive" if movie_['tving_exclusive_yn'] == "Y" else ""
+    drm4k = "DRM 4K" if movie_['drm_4k_yn'] == "Y" else ""
+    audio_type = audio_map.get(movie_.get('audio_type', "00"))or movie_.get('audio_type')
+    hdr_type = hdr_map.get(movie_.get('hdr_type', "00")) or movie_.get('hdr_type')
+    freeyn = "FREE" if movie_['free_yn'] == "Y" else "PAID"
+    ko_cc = "Korean CC" if movie_['ko_cc_yn'] == "Y" else ""
+    uhd = "UHD" if movie_['uhd_4k_yn'] == "Y" else ""
+    details = [
+        drm, cine, first_open, direct, dubver, subver, event, original, exclusive,
+        drm4k, audio_type, hdr_type, freeyn, ko_cc, uhd
+    ]
+    details = [x for x in details if x]
+    item['description'] = "{}<br>{}<br>{}<br>{}".format(
+        'Info : ' + ', '.join(details),
+        post['movie']['story']['ko'],
+        f"<img referrerpolicy='no-referrer' src='{imgurl}'>",
+        f"<a href='{link}'>Link movie</a>"
     )
     item['link'] = link
-    item['author'] = post['movie']['director'][0]
+    item['author'] = next((x for x in post['movie'].get('director', [])), "pandamoon21")
     rls_date = str(post.get('service_open_date', 0))
     if rls_date != "0":
         item['pubDate'] = "{}-{}-{} {}:{}:{}".format(

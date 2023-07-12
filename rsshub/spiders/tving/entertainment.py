@@ -6,7 +6,7 @@ def parse(post):
     title = post['program']['name']['ko']
     epsnum = post['episode']['frequency']
     item['title'] = f"{title} - E{epsnum:02}"
-    path = post['program']['image'][-2]['url']
+    path = post['program']['image'][0]['url']
     try:
         path2 = post['episode']['image'][0]['url']
     except IndexError:

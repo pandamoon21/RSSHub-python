@@ -300,6 +300,11 @@ def viu_newtitles(region=''):
     from rsshub.spiders.viu.newtitles import ctx
     return render_template('main/atom.xml', **filter_content(ctx(region)))
 
+@bp.route('/viu/simulcast/<string:limit>')
+def viu_simulcast(limit=''):
+    from rsshub.spiders.viu.simulcast import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(limit)))
+
 @bp.route('/kocowa/catalog/<string:catalogId>')
 def kocowa_contents(catalogId=''):
     from rsshub.spiders.kocowa.contents import ctx

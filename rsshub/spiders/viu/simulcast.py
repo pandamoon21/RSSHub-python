@@ -10,11 +10,13 @@ def parse(post):
     scid = post.get('scid')
     productid = post.get('productid')
     link = f"https://www.viu.com/ott/id/id/all/abc-{cid}"
-    item['description'] = "{}<br>{}<br>{}<br>{}".format(
+    image_link = f"http://i.vuclip.com/p?cid={cid}&t=thumb1280x720"
+    item['description'] = "{}<br>{}<br>{}<br>{}<br>{}".format(
         f'Status    : {status}',
         f'CID       : {cid}',
         f'SCID      : {scid}',
-        f'ProductID : {productid}'
+        f'ProductID : {productid}',
+        f"<img referrerpolicy='no-referrer' src='{image_link}'>",
     )
     item['link'] = link
     item['author'] = "pandamoon21"

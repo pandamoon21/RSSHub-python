@@ -39,11 +39,11 @@ def parse(post):
         drm4k, audio_type, hdr_type, freeyn, ko_cc, uhd
     ]
     details = [x for x in details if x]
-    item['description'] = "{}<br>{}<br>{}<br>{}".format(
+    item['description'] = "{}<br>{}<br>{}".format(
         'Info : ' + ', '.join(details),
-        post['movie']['story']['ko'],
-        f"<img referrerpolicy='no-referrer' src='{imgurl}'>",
+        # post['movie']['story']['ko'],
         f"<a href='{link}'>Link movie</a>"
+        f"<img referrerpolicy='no-referrer' src='{imgurl}'>",
     )
     item['link'] = link
     item['author'] = next((x for x in post['movie'].get('director', [])), "pandamoon21")

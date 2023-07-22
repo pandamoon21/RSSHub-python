@@ -8,12 +8,14 @@ def parse(post):
         "회")[0].split("(")[0].zfill(2)
     item['title'] = f"{title} - E{epsnum}"
     imgurl = f"https://{post['thumbnail']}"
-    item['description'] = "{a}<br>{b}".format(
-        a=post['title_list'][1]['text'],
-        b=f"<img referrerpolicy='no-referrer' src='{imgurl}'>"
-    )
     path = post['event_list'][1]['url']
-    item['link'] = f"https://www.wavve.com{path}"
+    link = f"https://www.wavve.com{path}"
+    item['link'] = link
+    item['description'] = "{}<br>{}".format(
+        # post['title_list'][1]['text'],
+        f"<a href='{link}'>Link series</a>",
+        f"<img referrerpolicy='no-referrer' src='{imgurl}'>"
+    )
     try:
         date = post['title_list'][1]['text'].split(" ")[2].split("(")[0]
     except (IndexError, Exception):

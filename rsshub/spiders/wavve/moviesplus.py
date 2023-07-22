@@ -37,14 +37,16 @@ def parse(post):
     subtitle = data.get('issubtitle')
     audio = data.get('ismultiaudiotrack')
     duration = to_hms(data['playtime'])
-    item['description'] = "{a}<br>{b}<br>{c}".format(
-        a="Title: {} | Duration: {} | Price: {}₩ | Age: {} | Subs: {} | MultiAudio: {}".format(
+    link = f"https://www.wavve.com{posturl}"
+    item['description'] = "{}<br>{}<br>{}".format(
+        "Title: {} | Duration: {} | Price: {}₩ | Age: {} | Subs: {} | MultiAudio: {}".format(
             post['alt'], duration, price, age, subtitle, audio
         ),
-        b=data['synopsis'],
-        c=f"<img referrerpolicy='no-referrer' src='{imgurl}'>"
+        f"<a href='{link}'>Link series</a>",
+        # data['synopsis'],
+        f"<img referrerpolicy='no-referrer' src='{imgurl}'>"
     )
-    item['link'] = f"https://www.wavve.com{posturl}"
+    item['link'] = link
     item['pubDate'] = "{}-{}-{} 18:00:00".format(
         date[:4], date[5:7], date[8:10]
     )

@@ -18,11 +18,11 @@ def parse(post):
     if path2:
         imgurl2 = f"https://image.tving.com{path2}/dims/resize/F_webp,720"
     link = f"https://www.tving.com/contents/{program_id}"
-    item['description'] = "{a}<br>{b}<br>{c}<br>{d}".format(
-        a=f"<a href='{link}'>Link series</a>",
-        b=post['content']['program']['synopsis']['ko'],
-        c=f"<img referrerpolicy='no-referrer' src='{imgurl}'>",
-        d=f"<img referrerpolicy='no-referrer' src='{imgurl2}'>" if path2 else ""
+    item['description'] = "{}<br>{}<br>{}".format(
+        f"<a href='{link}'>Link series</a>",
+        # post['content']['program']['synopsis']['ko'],
+        f"<img referrerpolicy='no-referrer' src='{imgurl}'>",
+        f"<img referrerpolicy='no-referrer' src='{imgurl2}'>" if path2 else ""
     )
     item['link'] = link
     drc = post['content']['program'].get('director')

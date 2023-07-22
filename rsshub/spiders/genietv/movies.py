@@ -72,11 +72,11 @@ def parse(post):
     link_seezn = vod_detail['share_url']
     size = [convert_size(int(x.split("=")[1])) for x in vod_detail["size"].split("|")]
     runtime = vod_detail['runtime'].replace("분", " Minutes").replace("시간", " Hour")
-    item['description'] = "{} - {}<br>{}<br>{}<br>{}<br>{}".format(
+    item['description'] = "{} - {}<br>{}<br>{}<br>{}".format(
         f"<a href='{link_seezn}'>Link Seezn</a>",
         f"<a href='{link}'>Link Ori</a>",
         f"Size: {', '.join(size)} | 5.1 Channel: {vod_detail['ch51_yn']} | Runtime: {runtime}",
-        f"Story: {unquote(vod_detail['story']).replace('+', ' ')}",
+        # f"Story: {unquote(vod_detail['story']).replace('+', ' ')}",
         f"<img referrerpolicy='no-referrer' src='{imgurl}'>",
         f"<img referrerpolicy='no-referrer' src='{imgurl2}'>",
     )

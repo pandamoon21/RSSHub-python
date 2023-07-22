@@ -13,14 +13,16 @@ def parse(post):
     age = post['product']['meta']['contentRating']['accessibleAge']
     price = post["singlePrices"][0]["price"]
     priceseason = post["seasonPrices"][0]["price"]
-    item['description'] = "{a}<br>{b}<br>{c}".format(
-        a="Runtime: {} | Age: {} | Price: {}₩ (single) - {}₩ (season)".format(
+    link = f"https://serieson.naver.com/v2/broadcasting/{post['viewSeq']}"
+    item['description'] = "{}<br>{}<br>{}".format(
+        "Runtime: {} | Age: {} | Price: {}₩ (single) - {}₩ (season)".format(
             runtime, age, price, priceseason
         ),
-        b=post['product']['meta']['synopsis'],
-        c=f"<img referrerpolicy='no-referrer' src='{imgurl}'>"
+        # post['product']['meta']['synopsis'],
+        f"<a href='{link}'>Link contents</a>",
+        f"<img referrerpolicy='no-referrer' src='{imgurl}'>"
     )
-    item['link'] = f"https://serieson.naver.com/v2/broadcasting/{post['viewSeq']}"
+    item['link'] = link
     try:
         item['author'] = post['product']['meta'].get('directors', [])[0]
     except IndexError:

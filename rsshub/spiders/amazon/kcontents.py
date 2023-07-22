@@ -36,10 +36,10 @@ def parse(post):
     price_buy = re.search(r"From (\$\d+\.\d+) to buy", post)
     if price_buy:
         harga += f" - Buy: {price_buy.group(1)}"
-    item['description'] = "{a}<br>{b}<br>{c}".format(
-        a=f"Type: {jenis} {harga}",
-        b=f"<a href='{link}'>Link contents</a>",
-        c=f"<img referrerpolicy='no-referrer' src='{imgurl}'>"
+    item['description'] = "{}<br>{}<br>{}".format(
+        f"Type: {jenis} {harga}",
+        f"<a href='{link}'>Link contents</a>",
+        f"<img referrerpolicy='no-referrer' src='{imgurl}'>"
     )
     item['link'] = link
     if len(tahun) == 0:

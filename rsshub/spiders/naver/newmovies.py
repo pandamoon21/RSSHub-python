@@ -12,14 +12,16 @@ def parse(post):
     star = post['product']['meta']['starScore']
     price = post["prices"][0]["price"]
     pricetype = post["prices"][0]["itemCategory"]
-    item['description'] = "{a}<br>{b}<br>{c}".format(
-        a="Score: {} | Runtime: {} | Age: {} | Price: {}₩ - {}".format(
+    link = f"https://serieson.naver.com/v2/movie/{post['viewSeq']}"
+    item['description'] = "{}<br>{}<br>{}".format(
+        "Score: {} | Runtime: {} | Age: {} | Price: {}₩ - {}".format(
             star, runtime, age, price, pricetype
         ),
-        b=post['product']['meta']['synopsis'],
-        c=f"<img referrerpolicy='no-referrer' src='{imgurl}'>"
+        # post['product']['meta']['synopsis'],
+        f"<a href='{link}'>Link contents</a>",
+        f"<img referrerpolicy='no-referrer' src='{imgurl}'>"
     )
-    item['link'] = f"https://serieson.naver.com/v2/movie/{post['viewSeq']}"
+    item['link'] = link
     try:
         item['author'] = post['product']['meta'].get('directors', [])[0]
     except IndexError:

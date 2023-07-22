@@ -42,7 +42,7 @@ def parse(post):
     item['description'] = "{}<br>{}<br>{}".format(
         'Info : ' + ', '.join(details),
         # post['movie']['story']['ko'],
-        f"<a href='{link}'>Link movie</a>"
+        f"<a href='{link}'>Link movie</a>",
         f"<img referrerpolicy='no-referrer' src='{imgurl}'>",
     )
     item['link'] = link

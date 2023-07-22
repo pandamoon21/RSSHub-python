@@ -31,13 +31,13 @@ def parse(post):
     imgurl_ls = post['meta']['poster'].get('landscape')
     imgurl_lstv = post['meta']['poster'].get('landscape_tv')
     link = f"https://www.kocowa.com/en_us/{prefix}/{post['id']}"
-    item['description'] = "{a}<br>{b}<br>{c}<br>{d}<br>{e}<br>{f}".format(
+    item['description'] = "{a}<br>{b}<br>{c}<br>{d}<br>{e}".format(
         a=f"<a href='{link}'>Link contents</a>",
         b=info,
         c=f"<img referrerpolicy='no-referrer' src='{imgurl_lstv}'>",
         d=f"<img referrerpolicy='no-referrer' src='{imgurl_pt}'>",
         e=f"<img referrerpolicy='no-referrer' src='{imgurl_ls}'>",
-        f=f"{post['meta']['summary']['en']}<br>Tags: {tags}"
+        # f=f"{post['meta']['summary']['en']}<br>Tags: {tags}"
     )
     item['link'] = link
     try:

@@ -3,6 +3,26 @@ from rsshub.utils import DEFAULT_HEADERS
 
 def parse(post):
     item = {}
+    cat2 = post['program'].get(
+        'display_category2', post['program'].get('category2_code', [])
+    )
+    if "PCA042" in cat2:
+        return item
+    channel = post['channel']['code']
+    skip_channel = [
+        'C00544',   # ChinaTV
+        'C51405',   # Paramount+
+        'C04061',   # Channel J
+        'C51259',   # CBS
+        'C05901',   # Channel W
+        'C45541',   # AsiaN
+        'C39241',   # Sony
+        'C30442',   # Media Genie
+        'C05441',   # Anibox
+        'C23442'    # Dlive
+    ]
+    if channel in skip_channel:
+        return item
     title = post['program']['name']['ko']
     epsnum = post['episode']['frequency']
     item['title'] = f"{title} - E{epsnum:02}"

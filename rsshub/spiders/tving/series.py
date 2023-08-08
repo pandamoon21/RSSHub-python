@@ -83,7 +83,7 @@ def ctx():
         headers=DEFAULT_HEADERS
     )
     posts = posts.json()['body']['result']
-    items = list(map(parse, posts))
+    items = [x for x in list(map(parse, posts)) if x]
     return {
         'title': 'TVING New Series Drama',
         'link': "https://www.tving.com/contents/episodes",

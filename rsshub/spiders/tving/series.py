@@ -19,7 +19,8 @@ def parse(post):
         'C39241',   # Sony
         'C30442',   # Media Genie
         'C05441',   # Anibox
-        'C23442'    # Dlive
+        'C23442',   # Dlive
+        'C44742'    # kt alpha
     ]
     if channel in skip_channel:
         return item

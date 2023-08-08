@@ -11,6 +11,7 @@ def parse(post):
     channel = post['channel']['code']
     skip_channel = [
         'C00544',   # ChinaTV
+        'C51261',   # CNTV
         'C51405',   # Paramount+
         'C04061',   # Channel J
         'C51259',   # CBS
@@ -20,7 +21,8 @@ def parse(post):
         'C30442',   # Media Genie
         'C05441',   # Anibox
         'C23442',   # Dlive
-        'C44742'    # kt alpha
+        'C44742',   # kt alpha
+        'C51551',   # 아몬드컴퍼니
     ]
     if channel in skip_channel:
         return item

@@ -23,6 +23,7 @@ def parse(post):
         'C23442',   # Dlive
         'C44742',   # kt alpha
         'C51551',   # 아몬드컴퍼니
+        'C35741',   # iMBC (?)
     ]
     if channel in skip_channel:
         return item

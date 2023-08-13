@@ -295,10 +295,10 @@ def netflix_korean():
     from rsshub.spiders.netflix.korean import ctx
     return render_template('main/atom.xml', **filter_content(ctx()))
 
-@bp.route('/viu/newtitles/<string:region>')
-def viu_newtitles(region=''):
+@bp.route('/viu/newtitles/<string:region>/<string:category>')
+def viu_newtitles(region='', category=''):
     from rsshub.spiders.viu.newtitles import ctx
-    return render_template('main/atom.xml', **filter_content(ctx(region)))
+    return render_template('main/atom.xml', **filter_content(ctx(region,category)))
 
 @bp.route('/viu/simulcast/<string:limit>')
 def viu_simulcast(limit=''):

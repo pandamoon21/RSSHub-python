@@ -669,9 +669,11 @@
     <div class="card-body">
         <h4 class="card-title">RSS VIU New Titles</h4>
         <h6 class="text-muted">RSS VIU New Titles <a href="https://github.com/pandamoon21" target="_blank" class="badge badge-secondary">by pandamoon21</a></h6>
-        <p class="card-text">Example：<a href="https://rss-panda1.vercel.app/viu/newtitles/sg" target="_blank">https://rss-panda1.vercel.app/viu/newtitles/sg</a></p>
-        <p class="card-text">Routing：<code>/viu/newtitles/<string:region></code></p>
-        <p class="card-text">region available: id, sg</p>
+        <p class="card-text">Example：<a href="https://rss-panda1.vercel.app/viu/newtitles/sg/all" target="_blank">https://rss-panda1.vercel.app/viu/newtitles/sg/all</a></p>
+        <p class="card-text">Example：<a href="https://rss-panda1.vercel.app/viu/newtitles/sg/kdrama" target="_blank">https://rss-panda1.vercel.app/viu/newtitles/sg/kdrama</a></p>
+        <p class="card-text">Routing：<code>/viu/newtitles/:region/:category</code></p>
+        <p class="card-text">region available: sg, hk, th, ph</p>
+        <p class="card-text">category available: all, kdrama, kvariety, cdrama, cvariety, thdrama, asiandrama</p>
     </div>
 </div>
 <br>
@@ -683,7 +685,7 @@
         <h4 class="card-title">RSS VIU New Simulcast Titles</h4>
         <h6 class="text-muted">RSS VIU New Simulcast Titles <a href="https://github.com/pandamoon21" target="_blank" class="badge badge-secondary">by pandamoon21</a></h6>
         <p class="card-text">Example：<a href="https://rss-panda1.vercel.app/viu/simulcast/50" target="_blank">https://rss-panda1.vercel.app/viu/simulcast/50</a></p>
-        <p class="card-text">Routing：<code>/viu/simulcast/<string:limit></code></p>
+        <p class="card-text">Routing：<code>/viu/simulcast/:limit</code></p>
         <p class="card-text">limit the number: 10, 20, 50, 100</p>
     </div>
 </div>

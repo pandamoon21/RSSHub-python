@@ -26,6 +26,7 @@ def parse(post):
         'C35741',   # iMBC (?)
         'C47841',   # SPO KOREA
         'C52055',   # 채널액션
+        'C51451',   # 스튜디오산타
     ]
     if channel in skip_channel:
         return item

@@ -14,7 +14,7 @@ def parse(post):
         path2 = post['content']['episode']['image'][0]['url']
     except IndexError:
         path2 = ""
-    imgurl = f"https://image.tving.com{path}/dims/resize/F_webp,480"
+    imgurl = f"https://image.tving.com{path}/dims/resize/F_webp,720"
     if path2:
         imgurl2 = f"https://image.tving.com{path2}/dims/resize/F_webp,720"
     link = f"https://www.tving.com/contents/{program_id}"

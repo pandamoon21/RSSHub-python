@@ -14,7 +14,7 @@ hdr_map = {
 def parse(post):
     item = {}
     item['title'] = post['vod_name']['ko']
-    imgurl = f"https://image.tving.com{post['movie']['image'][1]['url']}/dims/resize/F_webp,480"
+    imgurl = f"https://image.tving.com{post['movie']['image'][1]['url']}/dims/resize/F_webp,720"
     link = f"https://www.tving.com/contents/{post['vod_code']}"
     movie_ = post['movie']
     # movies details

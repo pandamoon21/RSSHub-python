@@ -250,6 +250,11 @@ def tving_series4k():
     from rsshub.spiders.tving.series4k import ctx
     return render_template('main/atom.xml', **filter_content(ctx()))
 
+@bp.route('/tving/movies4k/')
+def tving_movies4k():
+    from rsshub.spiders.tving.movies4k import ctx
+    return render_template('main/atom.xml', **filter_content(ctx()))
+
 @bp.route('/tving/entertainment/')
 def tving_enter():
     from rsshub.spiders.tving.entertainment import ctx

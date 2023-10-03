@@ -18,7 +18,7 @@ def parse(post):
     link = f"https://www.tving.com/contents/{post['vod_code']}"
     movie_ = post['movie']
     # movies details
-    ori_cp = movie_['original_cp']
+    ori_cp = movie_.get('original_cp', 'TVING')
     duration = movie_.get('duration') or 0
     drm = "DRM" if movie_.get('drm_yn') == "Y" else ""
     cine = "CINE" if movie_.get('cine_same_yn') == "Y" else ""

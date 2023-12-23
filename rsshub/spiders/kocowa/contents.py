@@ -44,11 +44,12 @@ def parse(post):
         item['author'] = post['meta'].get('writers', [])[0]
     except IndexError:
         pass
-    rls_date = post['start_date']
-    item['pubDate'] = "{}-{}-{} {}:{}:{}".format(
-            rls_date[:4], rls_date[5:-12], rls_date[8:-9],
-            rls_date[11:-6], rls_date[14:-3], rls_date[-2:]
-        )
+    rls_date = post.get('start_date')
+    if rls_date:
+        item['pubDate'] = "{}-{}-{} {}:{}:{}".format(
+                rls_date[:4], rls_date[5:-12], rls_date[8:-9],
+                rls_date[11:-6], rls_date[14:-3], rls_date[-2:]
+            )
     return item
 
 
@@ -58,8 +59,8 @@ def ctx(catalogId=''):
         "Referer": "https://www.kocowa.com/",
         "Accept": "application/json, text/plain, */*",
         "Content-Type": "application/json; charset=UTF-8",
-        "authorization": "1234567890",
-        "X-Forwarded-For": "20.150.219.190" # US IP
+        "authorization": "anonymous",
+        "X-Forwarded-For": "148.72.168.119" # US IP
     })
     url = 'https://prod-fms.kocowa.com/api/v01/fe/menu/get'
     posts = requests.get(

@@ -6,7 +6,8 @@ import time
 cat_map = {
     "音乐": "Music",
     "电影": "Movie",
-    "电视剧": "TV Series"
+    "电视剧": "TV Series",
+    "综艺": "Variety Show"
 }
 
 def parse(post):

@@ -300,6 +300,11 @@ def netflix_korean():
     from rsshub.spiders.netflix.korean import ctx
     return render_template('main/atom.xml', **filter_content(ctx()))
 
+@bp.route('/sungai/han')
+def sungai_han():
+    from rsshub.spiders.sungai.han import ctx
+    return render_template('main/atom.xml', **filter_content(ctx()))
+
 @bp.route('/viu/newtitles/<string:region>/<string:category>')
 def viu_newtitles(region='', category=''):
     from rsshub.spiders.viu.newtitles import ctx

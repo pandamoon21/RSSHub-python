@@ -7,7 +7,8 @@ cat_map = {
     "音乐": "Music",
     "电影": "Movie",
     "电视剧": "TV Series",
-    "综艺": "Variety Show"
+    "综艺": "Variety Show",
+    "动漫": "Cartoon"
 }
 
 def parse(post):

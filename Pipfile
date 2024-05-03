@@ -19,6 +19,7 @@ icecream = "*"
 flask-analytics = "*"
 arrow = "1.2.2"
 httpx = "*"
+tinydb = "*"
 
 [dev-packages]
 coverage = "*"

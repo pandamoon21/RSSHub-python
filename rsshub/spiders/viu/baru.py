@@ -5,13 +5,11 @@ import time
 
 from datetime import datetime
 from html.parser import HTMLParser
-from pathlib import Path
 from rsshub.utils import DEFAULT_HEADERS
 from tinydb import TinyDB, Query
+from tinydb.storages import MemoryStorage
 from typing import List
 
-viudb = Path(__file__).parent.joinpath('viubaru_db.json')
-viubaru_DB = TinyDB(str(viudb))
 
 class HTMLTableParser(HTMLParser):
     """ This class serves as a html table parser. It is able to parse multiple
@@ -80,9 +78,6 @@ class HTMLTableParser(HTMLParser):
             self.name = ""
 
 
-def check_db(judul_hash):
-    return bool(viubaru_DB.contains(Query().judul_hash == judul_hash))
-
 def table_2_list(xhtml, limit):
     p = HTMLTableParser()
     p.feed(xhtml)
@@ -93,6 +88,12 @@ def table_2_list(xhtml, limit):
         return tables_list[:limit]      # apply limit
     else:
         return tables_list
+
+# vercel is read only - can't write
+viubaru_DB = TinyDB(storage=MemoryStorage)
+
+def check_db(judul_hash):
+    return bool(viubaru_DB.contains(Query().judul_hash == judul_hash))
 
 def parse(post):
     item = {}
@@ -134,6 +135,7 @@ def ctx(limit='0'):
     limit = int(limit)
     posts_list = table_2_list(posts.text, limit)
     items = list(map(parse, posts_list))
+
     items = [x for x in items if x]
     return {
         'title': 'VIU Baru',

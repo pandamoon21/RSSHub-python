@@ -315,10 +315,10 @@ def viu_simulcast(limit=''):
     from rsshub.spiders.viu.simulcast import ctx
     return render_template('main/atom.xml', **filter_content(ctx(limit)))
 
-@bp.route('/viu/baru/<string:limit>')
-def viu_baru(limit=''):
-    from rsshub.spiders.viu.baru import ctx
-    return render_template('main/atom.xml', **filter_content(ctx(limit)))
+@bp.route('/watcha/neweps')
+def watcha_baru():
+    from rsshub.spiders.watcha.neweps import ctx
+    return render_template('main/atom.xml', **filter_content(ctx()))
 
 @bp.route('/kocowa/catalog/<string:catalogId>')
 def kocowa_contents(catalogId=''):

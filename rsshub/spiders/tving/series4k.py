@@ -56,7 +56,9 @@ def ctx():
             "pocType": "APP_X_TVING_0.0.0",
             "region": ""
         },
-        headers=DEFAULT_HEADERS
+        headers=DEFAULT_HEADERS.update({
+            "X-Forwarded-For": "108.181.52.147" # KR ip
+        })
     )
     posts = posts.json()['data']['bands'][0]['items']
     items = list(map(parse, posts))

@@ -87,7 +87,9 @@ def ctx():
             "teleCode": "CSCD0900",
             "apiKey": apikey
         },
-        headers=DEFAULT_HEADERS
+        headers=DEFAULT_HEADERS.update({
+            "X-Forwarded-For": "108.181.52.147" # KR ip
+        })
     )
     posts = posts.json()['body']['result']
     items = [x for x in list(map(parse, posts)) if x]

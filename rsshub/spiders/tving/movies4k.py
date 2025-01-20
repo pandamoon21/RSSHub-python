@@ -11,83 +11,47 @@ hdr_map = {
     "01": "HDR"
 }
 
-def null_to_none(input_):
-    if input_ in ["null", 0, "0"]:
-        return None
-    else:
-        return input_
+def to_hms(s):
+    s = int(s)
+    m, s = divmod(s, 60)
+    h, m = divmod(m, 60)
+    return "{:02}:{:02}:{:02}".format(int(h), int(m), int(s))
 
 def parse(post):
     item = {}
-    program_id = (
-        post.get('content_code') or
-        post["content"].get("vod_code")
-    )
-    title = null_to_none(
-        post['content']['vod_name']['en'] or
-        post['content']['vod_name']['ko']
-    )
-    year = (
-        null_to_none(str(post["content"]["movie"]["release_date"])[:4]) or
-        post['content']['movie'].get('product_year', '')
-    )
+    program_id = post.get('code')
+    title = post.get('title')
+    year = post.get('releaseDate')[:4]
     if year:
         title += f" - {year}"
     item['title'] = title
-    movie_ = post['content']['movie']
-    path = next((x["url"] for x in movie_['image'] if x["code"] == "CAIM2600"), "")
-    if not path:
-        path = next((x["url"] for x in movie_['image'] if x["code"] == "CAIM2100"), "")
-    if not path:
-        path = next((x["url"] for x in movie_['image'] if x["code"] == "CAIM2400"), "")
-    if not path:
-        path = next((x["url"] for x in movie_['image'] if x["code"] == "CAIM0400"), "")
-    if not path:
-        path = movie_['image'][0]["url"]
-    imgurl = f"https://image.tving.com{path}/dims/resize/F_webp,720"
+    imgurl = f"{post.get('imageUrl')}/dims/resize/F_webp,720"
     link = f"https://www.tving.com/contents/{program_id}"
     # movies details
-    ori_cp = movie_.get('original_cp', 'TVING')
-    duration = movie_.get('duration') or 0
-    drm = "DRM" if movie_.get('drm_yn') == "Y" else ""
-    cine = "CINE" if movie_.get('cine_same_yn') == "Y" else ""
-    first_open = "FIRST" if movie_.get('first_open_yn') == "Y" else ""
-    direct = "DIRECT Ver" if movie_.get('direct_ver_yn') == "Y" else ""
-    dubver = "DUB Ver" if movie_.get('dub_ver_yn') == "Y" else ""
-    subver = "HC Ver" if movie_.get('subtitle_ver_yn') == "Y" else ""
-    uneditver = "Uncensored Ver" if movie_.get('unedit_ver_yn') == "Y" else ""
-    specialver = "Special Ver" if movie_.get('special_ver_yn') == "Y" else ""
-    event = "EVENT" if movie_.get('event_yn') == "Y" else ""
-    original = "TVING Original" if movie_.get('tving_original_yn') == "Y" else ""
-    exclusive = "TVING Exclusive" if movie_.get('tving_exclusive_yn') == "Y" else ""
-    drm4k = "DRM 4K" if movie_.get('drm_4k_yn') == "Y" else ""
-    audio_type = audio_map.get(movie_.get('audio_type', "00")) or movie_.get('audio_type')
-    hdr_type = hdr_map.get(movie_.get('hdr_type', "00")) or movie_.get('hdr_type')
-    freeyn = "FREE" if movie_.get('free_yn') == "Y" else "PAID"
-    ko_cc = "Korean CC" if movie_.get('ko_cc_yn') == "Y" else ""
-    uhd = "UHD" if movie_.get('uhd_4k_yn') == "Y" else ""
+    label = post['label']
+    drm = "DRM" if label.get('isDrm', False) else ""
+    uhd = "UHD" if label.get('isUhd4k', False) else "HD"
+    ppv = "PPV" if label.get('isPPV', False) else ""
+    rating = "Rating: 18+" if label.get('isGrade18') else "Rating: All"
+    subtitle = "CC" if label.get('isSubtitle', False) else ""
+    playtime = to_hms(post.get('totalPlayTime', 0))
     details = [
-        ori_cp, drm, cine, first_open, direct, dubver, subver, event, original, exclusive,
-        drm4k, audio_type, hdr_type, freeyn, ko_cc, uhd, uneditver, specialver
+        drm, uhd, ppv, subtitle, rating
     ]
     details = [x for x in details if x]
-    item['description'] = "{}<br>{}<br>{}".format(
+    item['description'] = "{}<br>{}<br>{}<br>{}".format(
         'Info : ' + ', '.join(details),
+        f'Duration: {playtime}',
         f"<a href='{link}'>Link series</a>",
-        # post['content']['movie']['synopsis']['ko'],
+        # post['post']['synopsis'],
         f"<img referrerpolicy='no-referrer' src='{imgurl}'>"
     )
     item['link'] = link
-    drc = post['content']['movie'].get('director')
-    if drc:
-        item['author'] = ", ".join(drc) if len(drc) > 1 else drc[0]
-    else:
-        item['author'] = "pandamoon21"
-    rls_date = str(post.get('service_open_date', 0))
+    item['author'] = "pandamoon21"
+    rls_date = str(post.get('releaseDate', 0))
     if rls_date != "0":
-        item['pubDate'] = "{}-{}-{} {}:{}:{}".format(
-            rls_date[:4], rls_date[4:-8], rls_date[6:-6],
-            rls_date[8:-4], rls_date[10:-2], rls_date[-2:]
+        item['pubDate'] = "{}-{}-{} 00:00:01".format(
+            rls_date[:4], rls_date[4:-8], rls_date[6:-6]
         )
     return item
 
@@ -95,7 +59,9 @@ def parse(post):
 def ctx():
     DEFAULT_HEADERS.update({'Referer': 'https://atv.tving.com/'})
     apikey = "1e7952d0917d6aab1f0293a063697610"
-    url = 'https://api.tving.com/v2/operator/highlights'
+    # url = 'https://api.tving.com/v2/operator/highlights'
+    url = "https://gw.tving.com/bff/tv/v3/more/curation/CR0186"
+    # https://gw.tving.com/bff/tv/v3/more/curation/CR0186?screenCode=CSSD1300&networkCode=CSND0900&osCode=CSOD0900&teleCode=CSCD0900&apiKey=1e7952d0917d6aab1f0293a063697610&pocType=APP_X_TVING_0.0.0&region=
     posts = requests.get(
         url=url,
         params={
@@ -109,7 +75,7 @@ def ctx():
         },
         headers=DEFAULT_HEADERS
     )
-    posts = posts.json()['body']['result']
+    posts = posts.json()['data']['bands'][0]['items']
     items = list(map(parse, posts))
     return {
         'title': 'TVING New Movies 4K UHD',

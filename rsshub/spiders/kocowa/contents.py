@@ -8,7 +8,7 @@ def parse(post):
         judul = post['meta']['title']['en']
         year = post['meta']['year']
         season = f"{post['meta']['season_number']:02}"
-        country = post['meta']['country']
+        country = post['meta'].get('country', 'S.Korea')
         judul_fix = f"{judul} S{season} - {year}"
         prefix = "season"
     elif post['detail_type'] == "episode":
@@ -18,14 +18,15 @@ def parse(post):
         judul_fix = f"{judul} E{eps}"
         prefix = "media"
     provider = post['meta']['provider']
-    rating = post['meta']['rating_info']
-    if len(post['meta']['tags']) > 0:
+    rating = post['meta']['rating']
+    if len(post['meta'].get('tags', '')) > 0:
         tags = ", ".join(post['meta']['tags'])
     else:
-        tags = ", ".join(post['meta']['genres'])
+        tags = ", ".join(post['meta'].get('genres', ''))
     timestamp_ms = post['meta']['onair_date']
     onair_date = datetime.fromtimestamp(timestamp_ms / 1000).strftime('%Y-%m-%d %H:%M:%S')
     info = f"Air Date: {onair_date} - Country: {country} - Provider: {provider} - Rating: {rating}"
+    info += f" - Info: {tags}"
     item['title'] = judul_fix
     imgurl_pt = post['meta']['poster'].get('portrait')
     imgurl_ls = post['meta']['poster'].get('landscape')
@@ -54,13 +55,14 @@ def parse(post):
 
 
 def ctx(catalogId=''):
+    # https://prod-geo.kocowa.com/geoip
     DEFAULT_HEADERS.update({
         "Origin": "https://www.kocowa.com",
         "Referer": "https://www.kocowa.com/",
         "Accept": "application/json, text/plain, */*",
         "Content-Type": "application/json; charset=UTF-8",
         "authorization": "anonymous",
-        "X-Forwarded-For": "148.72.168.119" # US IP
+        "X-Forwarded-For": "155.94.217.75" # US IP
     })
     url = 'https://prod-fms.kocowa.com/api/v01/fe/menu/get'
     posts = requests.get(

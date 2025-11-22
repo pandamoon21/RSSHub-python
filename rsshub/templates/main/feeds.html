@@ -272,6 +272,33 @@
 
 <!--item info start-->
 <div class="card text-left">
+<div class="card-body">
+<h4 class="card-title">RSS Tokopedia Search (Experimental)</h4>
+<h6 class="text-muted">RSS Tokopedia Search with extensive filtering <a href="https://github.com/pandamoon21" target="_blank" class="badge badge-secondary">by pandamoon21</a></h6>
+<p class="card-text">Example：<a href="https://rss-panda1.vercel.app/tokopedia/search%3Fquery%3Dsepatu%26pmin%3D100000%26cod%3Dtrue%26rt%3D4.5" target="_blank">/tokopedia/search?query=sepatu&pmin=100000&cod=true&rt=4.5</a></p>
+<p class="card-text">Routing：<code>/tokopedia/search</code></p>
+<p class="card-text">Parameters (all optional, passed as query arguments):</p>
+<ul class="list-group list-group-flush" style="padding-left: 20px;">
+<li class="list-group-item"><code>limit</code>: Max number of items (int, default 10)</li>
+<li class="list-group-item"><code>query</code>: Search term (string, mandatory for meaningful results)</li>
+<li class="list-group-item"><code>bebas_ongkir_extra</code>: Free shipping filter (string, e.g., 'true')</li>
+<li class="list-group-item"><code>is_discount</code>: Discount filter (string, e.g., 'true')</li>
+<li class="list-group-item"><code>condition</code>: Product condition (int, e.g., 1=New, 2=Used)</li>
+<li class="list-group-item"><code>shop_tier</code>: Shop level (int, e.g., 1=Official Store, 2=Power Merchant)</li>
+<li class="list-group-item"><code>pmin</code>: Minimum price (int)</li>
+<li class="list-group-item"><code>pmax</code>: Maximum price (int)</li>
+<li class="list-group-item"><code>is_fulfillment</code>: Fulfillment status (string)</li>
+<li class="list-group-item"><code>is_plus</code>: TokoMember Plus status (string)</li>
+<li class="list-group-item"><code>cod</code>: Cash on Delivery filter (string, e.g., 'true')</li>
+<li class="list-group-item"><code>rt</code>: Minimum rating (float, e.g., 4.5)</li>
+<li class="list-group-item"><code>latest_product</code>: Filter by latest product (int)</li>
+</ul>
+</div>
+</div>
+<!--item info end-->
+
+<!--item info start-->
+<div class="card text-left">
     <div class="card-body">
         <h4 class="card-title">RSS GenieTV New Contents (Inactive)</h4>
         <h6 class="text-muted">RSS GenieTV New Contents <a href="https://github.com/pandamoon21" target="_blank" class="badge badge-secondary">by pandamoon21</a></h6>

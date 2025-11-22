@@ -116,6 +116,52 @@ def sungai_han():
     from rsshub.spiders.sungai.han import ctx
     return render_template('main/atom.xml', **filter_content(ctx()))
 
+@bp.route('/tokopedia/search')
+def tokopedia_search():
+    """
+    Tokopedia Search RSS with extensive query filtering.
+    All parameters are passed via request arguments (query string).
+    """
+    from rsshub.spiders.tokopedia.search import ctx
+    
+    # 1. Extract and convert parameters from request.args
+    # Note: Flask's request.args.get(..., type=int/float) handles conversion and None if missing/invalid.
+    # The default values are set here, but the spider should handle logic for missing parameters.
+    
+    limit = request.args.get('limit', default=10, type=int)
+    query = request.args.get('query', default="", type=str)
+    bebas_ongkir_extra = request.args.get('bebas_ongkir_extra', default="", type=str)
+    is_discount = request.args.get('is_discount', default="", type=str)
+    condition = request.args.get('condition', default=0, type=int)
+    shop_tier = request.args.get('shop_tier', default=0, type=int)
+    pmin = request.args.get('pmin', default=0, type=int)
+    pmax = request.args.get('pmax', default=0, type=int)
+    is_fulfillment = request.args.get('is_fulfillment', default="", type=str)
+    is_plus = request.args.get('is_plus', default="", type=str)
+    cod = request.args.get('cod', default="", type=str)
+    rt = request.args.get('rt', default=0.0, type=float)
+    latest_product = request.args.get('latest_product', default=0, type=int)
+
+    # 2. Call the spider's context function with all extracted arguments
+    feed_context = ctx(
+        limit=limit,
+        query=query,
+        bebas_ongkir_extra=bebas_ongkir_extra,
+        is_discount=is_discount,
+        condition=condition,
+        shop_tier=shop_tier,
+        pmin=pmin,
+        pmax=pmax,
+        is_fulfillment=is_fulfillment,
+        is_plus=is_plus,
+        cod=cod,
+        rt=rt,
+        latest_product=latest_product
+    )
+
+    # 3. Apply general RSS filtering (if any additional filters are in the URL) and render
+    return render_template('main/atom.xml', **filter_content(feed_context))
+
 @bp.route('/viu/newtitles/<string:region>/<string:category>')
 def viu_newtitles(region='', category=''):
     from rsshub.spiders.viu.newtitles import ctx

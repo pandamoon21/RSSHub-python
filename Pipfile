@@ -20,6 +20,7 @@ flask-analytics = "*"
 arrow = "1.2.2"
 httpx = "*"
 tinydb = "*"
+tokopaedi = "*"
 
 [dev-packages]
 coverage = "*"

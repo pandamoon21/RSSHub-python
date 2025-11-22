@@ -28,11 +28,11 @@ def parse(post):
     product_name = post["product_name"]
     price_text = post["price_text"]
     item['title'] = f"{product_name} - {price_text}"
-    prod_desc = post.get("product_description", "").replace("\n", "<br>")
-    prod_url = post["url"]
+    prod_desc = (post.get("description") or "").replace("\n", "<br>")
+    prod_url = post["url"].split("?")[0]
     prod_price_original = post.get("price_original", price_text)
-    prod_discount = post.get("discount_percentage", "-")
-    prod_stock = post["total_stock"]
+    prod_discount = post.get("discount_percentage") or "-"
+    prod_stock = post.get("total_stock") or 0
     prod_status = post["status"]
     prod_weight = format_weight(
         post.get("weight") or 0,
@@ -73,7 +73,7 @@ def parse(post):
 
 
 def ctx(
-        limit=20,
+        limit=10,
         query="",
         bebas_ongkir_extra: Optional[bool] = None,
         is_discount: Optional[bool] = None,
@@ -110,6 +110,7 @@ def ctx(
             latest_product=latest_product,
         )
     )
+    data.enrich_details(debug=True)
     posts = data.json()
     items = list(map(parse, posts))
     return {

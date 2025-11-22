@@ -110,7 +110,7 @@ def ctx(
             latest_product=latest_product,
         )
     )
-    data.enrich_details(debug=False)
+    # data.enrich_details(debug=False)
     posts = data.json()
     items = list(map(parse, posts))
     return {

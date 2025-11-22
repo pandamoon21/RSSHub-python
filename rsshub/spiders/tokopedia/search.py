@@ -90,7 +90,7 @@ def ctx(
         # 30 = added in the last 30 days
         # 90 = added in the last 90 days
         latest_product: Optional[int] = None,
-        debug_: Optional[bool] = True
+        debug_: Optional[bool] = False
     ):
     data = search(
         query,
@@ -110,7 +110,7 @@ def ctx(
             latest_product=latest_product,
         )
     )
-    data.enrich_details(debug=True)
+    data.enrich_details(debug=False)
     posts = data.json()
     items = list(map(parse, posts))
     return {

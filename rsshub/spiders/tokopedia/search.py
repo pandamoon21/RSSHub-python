@@ -1,8 +1,8 @@
 import requests
-
+import asyncio
 from typing import Optional
 from rsshub.utils import DEFAULT_HEADERS
-from tokopaedi import search, SearchFilters, get_product, get_reviews
+from tokopaedi_async import search, SearchFilters, get_product, get_reviews
 
 def format_weight(weight, unit):
     # Normalize everything to grams first
@@ -76,27 +76,15 @@ def parse(post):
     return item
 
 
-def ctx(
-        limit=10,
-        query="",
-        bebas_ongkir_extra: Optional[bool] = None,
-        is_discount: Optional[bool] = None,
-        condition: Optional[int] = None,    # 1 = new, 2 = used
-        shop_tier: Optional[int] = None,    # 2 = mall, 3 = power merchant
-        pmin: Optional[int] = None,         # minimum price filter
-        pmax: Optional[int] = None,         # maximum price filter
-        is_fulfillment: Optional[bool] = None,  # dilayani tokopedia
-        is_plus: Optional[bool] = None,     # tokopedia plus
-        cod: Optional[bool] = None,
-        rt: Optional[float] = None,         # rating filter (0.0 to 5.0)
-        # Product age in days
-        # 7  = added in the last 7 days
-        # 30 = added in the last 30 days
-        # 90 = added in the last 90 days
-        latest_product: Optional[int] = None,
-        debug_: Optional[bool] = False
+async def _async_search_and_enrich(
+        limit, query, bebas_ongkir_extra, is_discount, condition, 
+        shop_tier, pmin, pmax, is_fulfillment, is_plus, cod, rt, 
+        latest_product, debug_
     ):
-    data = search(
+    """Fungsi pembungkus ASYNC yang menjalankan tokopaedi-async."""
+    
+    # 1. Melakukan pencarian (async)
+    data = await search(
         query,
         max_result=limit,
         debug=debug_,
@@ -114,9 +102,81 @@ def ctx(
             latest_product=latest_product,
         )
     )
-    # data.enrich_details(debug=False)
-    posts = data.json()
-    items = list(map(parse, posts))
+
+    # 2. Melakukan enrichment jika ada data
+    if data:
+        # PENTING: Gunakan await di sini
+        await data.enrich_details(debug=debug_)
+        # await data.enrich_reviews(debug=debug_) # Opsional: reviews biasanya tidak perlu di RSS feed
+
+    return data
+
+
+def ctx(
+        limit=10,
+        query="",
+        bebas_ongkir_extra: Optional[str] = None,
+        is_discount: Optional[bool] = None,
+        condition: Optional[int] = None,    # 1 = new, 2 = used
+        shop_tier: Optional[int] = None,    # 2 = mall, 3 = power merchant
+        pmin: Optional[int] = None,         # minimum price filter
+        pmax: Optional[int] = None,         # maximum price filter
+        is_fulfillment: Optional[bool] = None,  # dilayani tokopedia
+        is_plus: Optional[bool] = None,     # tokopedia plus
+        cod: Optional[bool] = None,
+        rt: Optional[float] = None,         # rating filter (0.0 to 5.0)
+        # Product age in days
+        # 7  = added in the last 7 days
+        # 30 = added in the last 30 days
+        # 90 = added in the last 90 days
+        latest_product: Optional[int] = None,
+        debug_: Optional[bool] = False
+    ):
+    
+    # Konversi string 'true'/'false' dari query string Flask ke boolean/None untuk tokopaedi
+    def str_to_bool(val):
+        if val in ('true', 'True'):
+            return True
+        elif val in ('false', 'False'):
+            return False
+        return None
+
+    # Karena ctx adalah synchronous (dipanggil oleh Flask), kita jalankan _async_search_and_enrich() 
+    # menggunakan asyncio.run() untuk memblokir sampai selesai.
+    try:
+        data = asyncio.run(_async_search_and_enrich(
+            limit=limit,
+            query=query,
+            bebas_ongkir_extra=str_to_bool(bebas_ongkir_extra),
+            is_discount=str_to_bool(is_discount),
+            condition=condition if condition > 0 else None,
+            shop_tier=shop_tier if shop_tier > 0 else None,
+            pmin=pmin if pmin > 0 else None,
+            pmax=pmax if pmax > 0 else None,
+            is_fulfillment=str_to_bool(is_fulfillment),
+            is_plus=str_to_bool(is_plus),
+            cod=str_to_bool(cod),
+            rt=rt if rt > 0.0 else None,
+            latest_product=latest_product if latest_product > 0 else None,
+            debug_=debug_
+        ))
+    except Exception as e:
+        print(f"Error running async search: {e}")
+        # Kembalikan konteks dasar yang kosong jika terjadi kegagalan
+        return {
+            'title': 'Tokopedia Search Results - ERROR',
+            'link': "https://www.tokopedia.com",
+            'description': f'Error fetching data: {e}',
+            'author': 'pandamoon21',
+            'items': []
+        }
+
+    if data:
+        posts = data.json()
+        items = list(map(parse, posts))
+    else:
+        items = []
+        
     return {
         'title': 'Tokopedia Search Results',
         'link': "https://www.tokopedia.com",

@@ -57,7 +57,8 @@ def parse(post):
     shop_rincian = f"Toko: {shop_name} ({shop_type}), City: {shop_city}"
     images = post["product_media"]
     if not images:
-        images_html = f"<img referrerpolicy='no-referrer' src='{post["main_image"]}'><br>"
+        main_image = post["main_image"]
+        images_html = f"<img referrerpolicy='no-referrer' src='{main_image}'><br>"
     else:
         images_html = ""
         for image in images:

@@ -26,7 +26,7 @@ dependencies = [
     "arrow==1.2.2",
     "httpx",
     "tinydb",
-    "tokopaedi-async==0.1.1"
+    "tokopaedi-async==0.1.2"
 ]
 
 [project.optional-dependencies]

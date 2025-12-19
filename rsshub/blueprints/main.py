@@ -111,6 +111,11 @@ def netflix_korean():
     from rsshub.spiders.netflix.korean import ctx
     return render_template('main/atom.xml', **filter_content(ctx()))
 
+@bp.route('/ovagames/feeds')
+def ovagames_feeds():
+    from rsshub.spiders.ovagames.feeds import ctx
+    return render_template('main/atom.xml', **filter_content(ctx()))
+
 @bp.route('/sungai/han')
 def sungai_han():
     from rsshub.spiders.sungai.han import ctx
@@ -123,10 +128,6 @@ def tokopedia_search():
     All parameters are passed via request arguments (query string).
     """
     from rsshub.spiders.tokopedia.search import ctx
-    
-    # 1. Extract and convert parameters from request.args
-    # Note: Flask's request.args.get(..., type=int/float) handles conversion and None if missing/invalid.
-    # The default values are set here, but the spider should handle logic for missing parameters.
     
     limit = request.args.get('limit', default=10, type=int)
     query = request.args.get('query', default="", type=str)
@@ -142,7 +143,6 @@ def tokopedia_search():
     rt = request.args.get('rt', default=0.0, type=float)
     latest_product = request.args.get('latest_product', default=0, type=int)
 
-    # 2. Call the spider's context function with all extracted arguments
     feed_context = ctx(
         limit=limit,
         query=query,
@@ -159,7 +159,6 @@ def tokopedia_search():
         latest_product=latest_product
     )
 
-    # 3. Apply general RSS filtering (if any additional filters are in the URL) and render
     return render_template('main/atom.xml', **filter_content(feed_context))
 
 @bp.route('/viu/newtitles/<string:region>/<string:category>')

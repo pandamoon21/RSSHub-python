@@ -73,11 +73,38 @@ async def fetch_game_details(session, url):
 
                     # LINK DOWNLOAD tab - get mirrors
                     if 'DOWNLOAD' in title_text:
-                        for link in content.select('a[href*="filecrypt"]'):
-                            mirror_name = link.get_text(strip=True)
-                            mirror_url = link.get('href', '')
-                            if mirror_name and mirror_url:
-                                mirrors.append({'name': mirror_name, 'url': mirror_url})
+                        # Find download wrapper items (handles both normal and multi-part posts)
+                        download_groups = content.select('.dl-wraps-item')
+                        
+                        if download_groups:
+                            for group in download_groups:
+                                # Extract group title to detect specific sections (e.g. "CRACK ONLY")
+                                group_title_tag = group.select_one('b')
+                                group_name = group_title_tag.get_text(strip=True) if group_title_tag else ""
+                                
+                                # Check if this section is a Crack/Update/Fix to label it clearly
+                                is_special_section = any(x in group_name.upper() for x in ['CRACK', 'UPDATE', 'DLC', 'FIX', 'PATCH'])
+
+                                # Get all links in this wrapper (handles filecrypt, tpi.li, etc.)
+                                for link in group.select('a'):
+                                    mirror_name = link.get_text(strip=True)
+                                    mirror_url = link.get('href', '')
+                                    
+                                    if mirror_name and mirror_url:
+                                        # Append section name if it's special (e.g., "DATANODES [CRACKONLY]")
+                                        final_name = mirror_name
+                                        if is_special_section:
+                                            final_name = f"{mirror_name} [{group_name}]"
+                                            
+                                        mirrors.append({'name': final_name, 'url': mirror_url})
+                        
+                        # Fallback for older posts using direct filecrypt links without wrappers
+                        elif content.select('a[href*="filecrypt"]'):
+                            for link in content.select('a[href*="filecrypt"]'):
+                                mirror_name = link.get_text(strip=True)
+                                mirror_url = link.get('href', '')
+                                if mirror_name and mirror_url:
+                                    mirrors.append({'name': mirror_name, 'url': mirror_url})
 
                     # INSTALL NOTE tab
                     elif 'INSTALL' in title_text:
@@ -89,6 +116,7 @@ async def fetch_game_details(session, url):
         return details
 
     except Exception as e:
+        # print(f"Error parsing details: {e}") 
         return None
 
 

@@ -151,33 +151,44 @@ def build_description(details, link, imgurl):
 
         # Mirrors grouped by section
         if details.get('download_sections'):
-            parts.append("<b>Link Download:</b>")
+            # Build the entire download block as one string to control internal spacing precisely
+            dl_block_parts = []
             
             for section in details['download_sections']:
-                # Add Section Title (e.g., "PERSONA 5 ...")
-                section_html = f"<b>{section['title']}</b><br>"
-                
-                # Add Links joined by pipe
-                mirror_links = [f"<a href='{m['url']}'>{m['name']}</a>" for m in section['links']]
-                section_html += " | ".join(mirror_links)
-                
-                parts.append(section_html)
+                # Section Title + Links
+                section_links = [f"<a href='{m['url']}'>{m['name']}</a>" for m in section['links']]
+                dl_block_parts.append(f"<b>{section['title']}</b><br>" + " | ".join(section_links))
+            
+            # Join sections with double break (visual gap between sections)
+            sections_html = "<br><br>".join(dl_block_parts)
+            
+            # Combine Header with Sections (Single break after "Link Download:")
+            final_dl_html = f"<b>Link Download:</b><br>{sections_html}"
+            
+            parts.append(final_dl_html)
 
         # Install notes
         if details.get('install_notes'):
             notes = details['install_notes']
             
-            # 1. Convert NEWLINES to <br> first (since extracted text uses \n)
+            # 1. Convert all newlines to HTML breaks
             install_html = notes.replace('\n', '<br>')
             
-            # 2. Collapse multiple <br> tags to single <br> (Clean up empty gaps)
+            # 2. Normalize: Collapse multiple <br> sequences into a single <br>
+            #    (This removes huge gaps and standardizes the text)
             install_html = re.sub(r'(<br>\s*)+', '<br>', install_html)
             
-            # 3. Add double spacing back specifically before major headers
+            # 3. Add visual gaps (double break) ONLY before specific Headers
+            #    We look for a <br> immediately followed by a Header and replace it with <br><br>Header
             header_pattern = r'(Full List of Supported Languages|NOTES:|Release Notes)'
-            install_html = re.sub(f'({header_pattern})', r'<br><br>\1', install_html, flags=re.IGNORECASE)
+            install_html = re.sub(
+                f'<br>({header_pattern})', 
+                r'<br><br>\1', 
+                install_html, 
+                flags=re.IGNORECASE
+            )
             
-            # 4. Remove leading/trailing breaks
+            # 4. Clean up any leading/trailing breaks
             install_html = install_html.strip('<br>').strip()
             
             parts.append(f"<b>Install Notes:</b><br>{install_html}")

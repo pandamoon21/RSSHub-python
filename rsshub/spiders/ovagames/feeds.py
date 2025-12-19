@@ -125,7 +125,7 @@ def build_description(details, link, imgurl):
 
         # Install notes
         if details.get('install_notes'):
-            install_html = details['install_notes'].replace('\n', '<br>')
+            install_html = details['install_notes'].replace('\n', '<br>').replace('<br><br>', '<br>')
             parts.append(f"<b>Install Notes:</b><br>{install_html}")
 
     parts.append(f"<a href='{link}'>View on OvaGames</a>")

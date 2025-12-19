@@ -60,7 +60,8 @@ async def fetch_game_details(session, url):
                 break
 
         # Get mirrors from download tab
-        mirrors = []
+        download_sections = []
+        
         tabs_container = post_wrapper.select_one('#wp-tabs-1, .wp-tabs')
         if tabs_container:
             tab_titles = tabs_container.select('h3.wp-tab-title')
@@ -71,52 +72,54 @@ async def fetch_game_details(session, url):
                 if i < len(tab_contents):
                     content = tab_contents[i]
 
-                    # LINK DOWNLOAD tab - get mirrors
+                    # LINK DOWNLOAD tab
                     if 'DOWNLOAD' in title_text:
-                        # Find download wrapper items (handles both normal and multi-part posts)
+                        # 1. Try finding .dl-wraps-item (Newer posts/Multiple sections)
                         download_groups = content.select('.dl-wraps-item')
                         
                         if download_groups:
                             for group in download_groups:
-                                # Extract group title to detect specific sections (e.g. "CRACK ONLY")
+                                # Extract group title (e.g. "GAME NAME - GROUP")
                                 group_title_tag = group.select_one('b')
-                                group_name = group_title_tag.get_text(strip=True) if group_title_tag else ""
+                                group_name = group_title_tag.get_text(strip=True) if group_title_tag else "Download"
                                 
-                                # Check if this section is a Crack/Update/Fix to label it clearly
-                                is_special_section = any(x in group_name.upper() for x in ['CRACK', 'UPDATE', 'DLC', 'FIX', 'PATCH'])
-
-                                # Get all links in this wrapper (handles filecrypt, tpi.li, etc.)
+                                links = []
                                 for link in group.select('a'):
-                                    mirror_name = link.get_text(strip=True)
+                                    # Remove bullet point and whitespace
+                                    raw_name = link.get_text(strip=True)
+                                    clean_name = raw_name.replace('•', '').strip()
                                     mirror_url = link.get('href', '')
                                     
-                                    if mirror_name and mirror_url:
-                                        # Append section name if it's special (e.g., "DATANODES [CRACKONLY]")
-                                        final_name = mirror_name
-                                        if is_special_section:
-                                            final_name = f"{mirror_name} [{group_name}]"
-                                            
-                                        mirrors.append({'name': final_name, 'url': mirror_url})
+                                    if clean_name and mirror_url:
+                                        links.append({'name': clean_name, 'url': mirror_url})
+                                
+                                if links:
+                                    download_sections.append({'title': group_name, 'links': links})
                         
-                        # Fallback for older posts using direct filecrypt links without wrappers
+                        # 2. Fallback for older posts (Direct links, no wrap items)
                         elif content.select('a[href*="filecrypt"]'):
+                            links = []
                             for link in content.select('a[href*="filecrypt"]'):
-                                mirror_name = link.get_text(strip=True)
+                                raw_name = link.get_text(strip=True)
+                                clean_name = raw_name.replace('•', '').strip()
                                 mirror_url = link.get('href', '')
-                                if mirror_name and mirror_url:
-                                    mirrors.append({'name': mirror_name, 'url': mirror_url})
+                                if clean_name and mirror_url:
+                                    links.append({'name': clean_name, 'url': mirror_url})
+                            
+                            if links:
+                                download_sections.append({'title': 'Download Links', 'links': links})
 
                     # INSTALL NOTE tab
                     elif 'INSTALL' in title_text:
                         wrapper = content.select_one('.wp-tab-content-wrapper')
                         if wrapper:
+                            # Use separator to preserve structure
                             details['install_notes'] = wrapper.get_text(separator='\n').strip()
 
-        details['mirrors'] = mirrors
+        details['download_sections'] = download_sections
         return details
 
     except Exception as e:
-        # print(f"Error parsing details: {e}") 
         return None
 
 
@@ -146,14 +149,37 @@ def build_description(details, link, imgurl):
         if info_lines:
             parts.append("<br>".join(info_lines))
 
-        # Mirrors with hyperlinks
-        if details.get('mirrors'):
-            mirror_links = [f"<a href='{m['url']}'>{m['name']}</a>" for m in details['mirrors']]
-            parts.append(f"<b>Mirrors:</b> {' | '.join(mirror_links)}")
+        # Mirrors grouped by section
+        if details.get('download_sections'):
+            parts.append("<b>Link Download:</b>")
+            
+            for section in details['download_sections']:
+                # Add Section Title (e.g., "PERSONA 5 ...")
+                section_html = f"<b>{section['title']}</b><br>"
+                
+                # Add Links joined by pipe
+                mirror_links = [f"<a href='{m['url']}'>{m['name']}</a>" for m in section['links']]
+                section_html += " | ".join(mirror_links)
+                
+                parts.append(section_html)
 
         # Install notes
         if details.get('install_notes'):
-            install_html = details['install_notes'].replace('\n', '<br>').replace('<br><br>', '<br>')
+            notes = details['install_notes']
+            
+            # 1. Convert NEWLINES to <br> first (since extracted text uses \n)
+            install_html = notes.replace('\n', '<br>')
+            
+            # 2. Collapse multiple <br> tags to single <br> (Clean up empty gaps)
+            install_html = re.sub(r'(<br>\s*)+', '<br>', install_html)
+            
+            # 3. Add double spacing back specifically before major headers
+            header_pattern = r'(Full List of Supported Languages|NOTES:|Release Notes)'
+            install_html = re.sub(f'({header_pattern})', r'<br><br>\1', install_html, flags=re.IGNORECASE)
+            
+            # 4. Remove leading/trailing breaks
+            install_html = install_html.strip('<br>').strip()
+            
             parts.append(f"<b>Install Notes:</b><br>{install_html}")
 
     parts.append(f"<a href='{link}'>View on OvaGames</a>")

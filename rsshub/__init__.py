@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 import click
 from flask import Flask, render_template
 from flask.cli import with_appcontext
@@ -76,7 +76,7 @@ def register_errors(app):
 def register_context_processors(app):
     @app.context_processor
     def inject_date_now():
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         return {'now': now}
 
 

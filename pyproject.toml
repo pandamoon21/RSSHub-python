@@ -10,7 +10,6 @@ authors = [
 ]
 
 dependencies = [
-    "werkzeug>=1.0.1",
     "uvicorn>=0.24",
     "bootstrap-flask",
     "feedparser==6.0.8",

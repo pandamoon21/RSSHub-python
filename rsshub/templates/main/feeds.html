@@ -281,28 +281,12 @@
 <br>
 <!--item info end-->
 
-<!--item info start-->
-<div class="card text-left">
-    <div class="card-body">
-        <h4 class="card-title">RSS VIU Baru</h4>
-        <h6 class="text-muted">RSS VIU Baru <a href="https://github.com/pandamoon21" target="_blank" class="badge badge-secondary">by pandamoon21</a></h6>
-        <p class="card-text">Example：<a href="https://rss-panda1.vercel.app/viu/baru/50" target="_blank">https://rss-panda1.vercel.app/viu/baru/50</a></p>
-        <p class="card-text">Routing：<code>/viu/baru/:limit</code></p>
-        <p class="card-text">limit the number: 10, 20, 50, 100</p>
-    </div>
-</div>
-<br>
-<!--item info end-->
-
-<!--item info start-->
-<div class="card text-left">
-<div class="card-body">
-<h4 class="card-title">RSS Tokopedia Search (Experimental)</h4>
-<h6 class="text-muted">RSS Tokopedia Search with extensive filtering <a href="https://github.com/pandamoon21" target="_blank" class="badge badge-secondary">by pandamoon21</a></h6>
-<p class="card-text">Example：<a href="https://rss-panda1.vercel.app/tokopedia/search%3Fquery%3Dsepatu%26pmin%3D100000%26cod%3Dtrue%26rt%3D4.5" target="_blank">/tokopedia/search?query=sepatu&pmin=100000&cod=true&rt=4.5</a></p>
-<p class="card-text">Routing：<code>/tokopedia/search</code></p>
-<p class="card-text">Parameters (all optional, passed as query arguments):</p>
-<ul class="list-group list-group-flush" style="padding-left: 20px;">
+        <h4 class="card-title">Tokopedia Search</h4>
+        <h6 class="text-muted">Extensive query filtering <a href="https://github.com/pandamoon21" target="_blank" class="badge badge-secondary">by pandamoon21</a> <span class="badge badge-warning">Async</span></h6>
+        <p class="card-text">Example：<a href="/tokopedia/search?query=samsung&pmin=1000000&cod=true&rt=4.5" target="_blank">/tokopedia/search?query=samsung&pmin=1000000&cod=true&rt=4.5</a></p>
+        <p class="card-text">Routing：<code>/tokopedia/search</code></p>
+        <p class="card-text">Query string parameters support full filtering capabilities.</p>
+        <ul class="list-group list-group-flush" style="padding-left: 20px;">
 <li class="list-group-item"><code>limit</code>: Max number of items (int, default 10)</li>
 <li class="list-group-item"><code>query</code>: Search term (string, mandatory for meaningful results)</li>
 <li class="list-group-item"><code>bebas_ongkir_extra</code>: Free shipping filter (string, e.g., 'true')</li>

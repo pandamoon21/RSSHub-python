@@ -4,17 +4,9 @@
         {
             "src": "main.py",
             "use": "@vercel/python"
-        },
-        {
-            "src": "rsshub/static/**",
-            "use": "@vercel/static"
         }
     ],
     "routes": [
-        {
-            "src": "/static/(.*)",
-            "dest": "/rsshub/static/$1"
-        },
         {
             "src": "/(.*)",
             "dest": "main.py"
@@ -22,7 +14,6 @@
     ],
     "env": {
         "FLASK_DEBUG": "0",
-        "FLASK_CONFIG": "production",
-        "PYTHONPATH": "."
+        "FLASK_CONFIG": "production"
     }
 }

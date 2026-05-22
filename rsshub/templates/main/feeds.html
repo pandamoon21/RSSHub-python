@@ -1,15 +1,24 @@
 {% extends "layout.html" %} {% block title %}All Feeds{% endblock title %} {% block content %}
 
+<div class="alert alert-info">
+    <h5><i class="fa fa-info-circle"></i> Deployment Notes</h5>
+    <p class="mb-0">
+        Feeds tagged <span class="badge badge-warning">Async</span> require a self-hosted server. They use
+        <code>asyncio</code> / <code>curl_cffi</code> and may not run reliably on Vercel's serverless runtime.
+        Feeds tagged <span class="badge badge-secondary">Lite OK</span> work everywhere.
+    </p>
+</div>
+
 <!--item info start-->
 <div class="card text-left">
     <div class="card-body">
         <h4 class="card-title">RSS FilterParameter</h4>
         <h6 class="text-muted">RSS Filter Parameter<a href="https://github.com/hillerliao" target="_blank" class="badge badge-secondary">by hillerliao</a></h6>
         <p class="card-text">Example：<a href="https://rss-panda1.vercel.app/filter?feed=https://sspai.com/feed&include_title=派早报" target="_blank">https://rss-panda1.vercel.app/filter?feed=https://sspai.com/feed&include_title=派早报</a></p>
-        <p class="card-text">Parameter：<code>include_title</code> Match Title</p>
-        <p class="card-text">Parameter：<code>include_description</code> Match Description</p>
-        <p class="card-text">Parameter：<code>exclude_title</code> Exclude Title</p>
-        <p class="card-text">Parameter：<code>exclude_description</code> Exclude Description</p>
+        <p class="card-text">Parameter：<code>include_title</code> Match Title (use <code>|</code> for OR, e.g. <code>news|alert</code>)</p>
+        <p class="card-text">Parameter：<code>include_description</code> Match Description (supports <code>|</code> for OR)</p>
+        <p class="card-text">Parameter：<code>exclude_title</code> Exclude Title (supports <code>|</code> for OR)</p>
+        <p class="card-text">Parameter：<code>exclude_description</code> Exclude Description (supports <code>|</code> for OR)</p>
         <p class="card-text">Parameter：<code>limit</code> Limit the number of entries</p>
         
     </div>
@@ -25,6 +34,21 @@
         <p class="card-text">Example：<a href="https://rss-panda1.vercel.app/filter?feed=https://sspai.com/feed" target="_blank">https://rss-panda1.vercel.app/filter?feed=https://sspai.com/feed</a></p>
         <p class="card-text">Routing：<code>/filter?feed=:feed</code></p>
         <p class="card-text">Parameter：feed [rss address]</p>
+    </div>
+</div>
+<br>
+<!--item info end-->
+
+<!--item info start-->
+<div class="card text-left">
+    <div class="card-body">
+        <h4 class="card-title">Web Article Readability Proxy</h4>
+        <h6 class="text-muted">Extract clean article text from any URL <a href="https://github.com/hillerliao" target="_blank" class="badge badge-secondary">by hillerliao</a> <span class="badge badge-warning">Self-hosted</span></h6>
+        <p class="card-text">Example：<a href="/proxy/readability?url=https://example.com" target="_blank">/proxy/readability?url=https://example.com</a></p>
+        <p class="card-text">Routing：<code>/proxy/readability?url=:url</code></p>
+        <p class="card-text">Parameter：<code>url</code> Target page URL</p>
+        <p class="card-text">Parameter：<code>proxy</code> Optional HTTP/HTTPS proxy URL</p>
+        <p class="card-text"><small class="text-muted">Requires <code>trafilatura</code> (full install). Returns 503 in lite mode.</small></p>
     </div>
 </div>
 <br>

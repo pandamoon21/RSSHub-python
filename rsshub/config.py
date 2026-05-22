@@ -7,14 +7,15 @@ basedir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
 class BaseConfig:
     SITE_NAME = 'RSSHub'
-    GITHUB_USERNAME = 'alphardex'
-    EMAIL = '2582347430@qq.com'
+    GITHUB_USERNAME = 'pandamoon21'
+    EMAIL = '33972938+pandamoon21@users.noreply.github.com'
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'f43hrt53et53'
     DEBUG_TB_INTERCEPT_REDIRECTS = False
 
 
 class DevelopmentConfig(BaseConfig):
-    pass
+    DEBUG = True
+    ENV = 'development'
 
 
 class TestingConfig(BaseConfig):
@@ -22,11 +23,12 @@ class TestingConfig(BaseConfig):
 
 
 class ProductionConfig(BaseConfig):
-    pass
+    DEBUG = False
+    ENV = 'production'
 
 
 config = {
     'development': DevelopmentConfig,
     'testing': TestingConfig,
-    'production': ProductionConfig
+    'production': ProductionConfig,
 }

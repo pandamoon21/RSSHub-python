@@ -3,28 +3,34 @@ from datetime import datetime
 import click
 from flask import Flask, render_template
 from flask.cli import with_appcontext
+
 from rsshub.config import config
-from rsshub.extensions import *
+from rsshub.extensions import bootstrap, moment, debugtoolbar, cache
 from rsshub.blueprints.main import bp as main_bp
+from rsshub.blueprints.proxy import bp as proxy_bp
 from rsshub.utils import XMLResponse
 
 
 def create_app(config_name=None):
     if config_name is None:
-        # config_name = os.getenv('FLASK_CONFIG', 'development')
         config_name = os.getenv('FLASK_CONFIG', 'production')
 
     app = Flask(__name__)
     app.config.from_object(config[config_name])
     app.response_class = XMLResponse
+    cache.init_app(app)
 
-    # Add analytics 
-    from flask_analytics import Analytics
-    from rsshub.google_analytics import ga_account
+    # Optional Google Analytics integration. Skipped silently if the
+    # `flask-analytics` package is unavailable (e.g. lite deployments).
+    try:
+        from flask_analytics import Analytics
+        from rsshub.google_analytics import ga_account
 
-    Analytics(app)
-    app.config['ANALYTICS']['GOOGLE_UNIVERSAL_ANALYTICS']['ACCOUNT'] = ga_account
-    app.config['ANALYTICS']['ENABLED'] = True
+        Analytics(app)
+        app.config['ANALYTICS']['GOOGLE_UNIVERSAL_ANALYTICS']['ACCOUNT'] = ga_account
+        app.config['ANALYTICS']['ENABLED'] = True
+    except ImportError:
+        pass
 
     register_blueprints(app)
     register_extensions(app)
@@ -37,12 +43,20 @@ def create_app(config_name=None):
 
 def register_extensions(app):
     bootstrap.init_app(app)
-    debugtoolbar.init_app(app)
     moment.init_app(app)
+
+    # Only enable the debug toolbar in development when it's installed.
+    if (
+        app.config.get('ENV') == 'development'
+        and not app.config.get('TESTING')
+        and debugtoolbar is not None
+    ):
+        debugtoolbar.init_app(app)
 
 
 def register_blueprints(app):
     app.register_blueprint(main_bp)
+    app.register_blueprint(proxy_bp)
 
 
 def register_errors(app):

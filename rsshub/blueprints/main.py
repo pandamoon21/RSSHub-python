@@ -274,6 +274,13 @@ def kocowa_contents(catalogId=''):
     return render_template('main/atom.xml', **filter_content(ctx(catalogId)))
 
 
+@bp.route('/kocowa/comcast')
+@cache.cached(timeout=1800, query_string=True)
+def kocowa_comcast():
+    from rsshub.spiders.kocowa.comcast import ctx
+    return render_template('main/atom.xml', **filter_content(ctx()))
+
+
 @bp.route('/fitgirl/feed')
 @cache.cached(timeout=1800, query_string=True)
 def fitgirl_feed():

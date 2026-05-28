@@ -278,7 +278,8 @@ def kocowa_contents(catalogId=''):
 @cache.cached(timeout=1800, query_string=True)
 def kocowa_comcast():
     from rsshub.spiders.kocowa.comcast import ctx
-    return render_template('main/atom.xml', **filter_content(ctx()))
+    limit = request.args.get('limit', default=50, type=int)
+    return render_template('main/atom.xml', **filter_content(ctx(limit)))
 
 
 @bp.route('/fitgirl/feed')

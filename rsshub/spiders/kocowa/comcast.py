@@ -102,13 +102,13 @@ def parse(entry):
     return item
 
 
-def ctx():
+def ctx(limit=50):
     res = requests.get(FEED_URL, headers=DEFAULT_HEADERS, timeout=30)
     res.raise_for_status()
     root = ET.fromstring(res.content)
 
     entries = root.findall("atom:entry", NAMESPACES)
-    items = [parse(e) for e in entries]
+    items = [parse(e) for e in entries[:limit]]
 
     return {
         "title": "KOCOWA Comcast Feed",

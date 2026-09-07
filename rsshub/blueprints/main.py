@@ -449,6 +449,7 @@ def yfchuhai_express():
     return render_template('main/atom.xml', **filter_content(ctx()))
 
 @bp.route('/bjnews/<string:category>')
+@swr_cache(timeout=600)  # SWR缓存：上游跨境抓取不稳定，回源抽风时能返回旧数据而非空转
 def bjnews_channel(category=''):
     from rsshub.spiders.bjnews.channel import ctx
     return render_template('main/atom.xml', **filter_content(ctx(category)))

@@ -9,18 +9,18 @@ m_domain = 'https://m.bjnews.com.cn'
 
 # 总抓取预算(秒):尽量贴近 Vercel 10s 上限但留出冷启动/渲染余量。
 #
-# 网络背景:新京报对部分海外机房(Vercel 的 AWS 出口,当前区域 hkg1)呈"间歇性黑洞"——
-# 大多时候 TCP 连接无响应直到超时,偶尔几秒内正常。m.bjnews.com.cn 同理。
-# 单源硬等容易整套超时 500。因此采用三级接力 + 短超时快速切换:
-#   ① www 桌面站 HTML(最新)
-#   ② m 站 JSON 列表接口(与 www 不同线路,提高撞中可用出口概率)
-#   ③ r.jina.ai reader 中转(其服务端非云厂商被封锁段,实测可抓取新京报)
-# 全程在 REQUEST_BUDGET 内;每源用短 deadline,失败立即切下一源。
+# 线上实测结论(2026-09-07, Vercel 函数区域 hkg1):
+#   - www.bjnews.com.cn 直连几乎恒定黑洞(8s TCP 无响应)。
+#   - m.bjnews.com.cn JSON 接口是"间歇黑洞":Vercel 出口 IP 池中部分被封锁,
+#     部分可通;单请求成功概率约 1/3~1/2,失败是 2.2s 秒超时。
+# 因此策略:desktop 快速试探一次(1.5s),随后把剩余预算全部押在 m 站 API 上
+# 多轮重试(每轮独立出口连接,撞中可用 IP 即成功)。
+# 另加模块级 last-good:同实例进程内若此前成功过,连续黑洞时返回最近一次
+# 成功结果,避免 SWR 冷缓存窗口内直接 500。
 REQUEST_BUDGET = 8.0
-SLICE = 2.2  # 直连源单轮预算;黑洞下快速失败换源,成功响应多在 1~3s 内
-
-# jina reader 免费中转(无 key 限速约 20 次/分,对 RSS 轮询足够)
-JINA = 'https://r.jina.ai'
+DESKTOP_SLICE = 1.5  # www 已基本全黑洞,给短预算止损
+MAPI_SLICE = 2.2     # m 站 API 单轮预算;黑洞 2.2s 秒超时,成功多在 1~3s
+LAST_GOOD_TTL = 6 * 3600  # last-good 兜底最大时长(秒)
 
 # 频道元信息:category -> (m站 channel_id, 中文名)
 # m站接口 /bwnew/index-tj 需要 channel_id;名称用于 API 兜底时的 feed 标题。
@@ -112,31 +112,29 @@ def parse_mapi(res):
     return items
 
 
-def parse_jina(res):
-    """解析 r.jina.ai 中转返回的 markdown 文本,提取文章链接。"""
-    text = res.text
-    items = []
-    seen = set()
-    # jina 会把页面 <a href> 转成 markdown 链接;仅收 bjnews 文章详情页
-    pat = re.compile(
-        r'\[([^\]]{4,150})\]'
-        r'\((https?://(?:www\.|m\.)?bjnews\.com\.cn/(?:detail-\d+\.html|detail/\d+\.html))\)')
-    for m in pat.finditer(text):
-        title = _clean(m.group(1))
-        url = m.group(2).strip()
-        if not title or url in seen:
-            continue
-        seen.add(url)
-        items.append({'title': title, 'description': title, 'link': url})
-    if not items:
-        raise ValueError('jina 中转文本未解析出文章链接')
+# 模块级 last-good:key=category -> (items, ts)。进程存活期内跨请求兜底黑洞。
+_LAST_GOOD = {}
+
+
+def _last_good(category):
+    rec = _LAST_GOOD.get(category)
+    if not rec:
+        return None
+    items, ts = rec
+    if time.time() - ts > LAST_GOOD_TTL:
+        return None
     return items
 
 
-def _fetch(category):
-    """预算内三级接力抓取:桌面站 HTML → m站 JSON → jina 中转;失败快速切换。
+def _save_good(category, items):
+    _LAST_GOOD[category] = (items, time.time())
 
-    全部失败则抛异常(不吞错,防止坏数据进 SWR 缓存)。
+
+def _fetch(category):
+    """预算内抓取:www 桌面站快速试探 → m站 JSON 接口多轮重试。
+
+    全部失败:若同进程此前成功过且未过期,返回 last-good 避免 500;否则抛异常
+    (不吞错,防止坏数据进 SWR 缓存)。
     """
     start = time.time()
     errors = []
@@ -144,43 +142,65 @@ def _fetch(category):
     channel_id, channel_name = _m_channel(category)
     api_url = None
 
-    # 未知频道:先以短请求探测 m 页里隐藏的 channel_id(供源2使用)
+    def _ok(source, items):
+        _save_good(category, items)
+        print(f'[bjnews] {category}: 源 {source} 成功 '
+              f'({time.time() - start:.1f}s, {len(items)} 条)')
+        return items, channel_name, r_url
+
+    # 未知频道:先以短请求探测 m 页里隐藏的 channel_id(供 m 站接口使用)
     if channel_id is None:
         try:
             page = fetch_with_deadline(f'{m_domain}/{category}',
-                                       deadline=min(2.0, REQUEST_BUDGET), timeout=3.0)
+                                       deadline=1.8, timeout=3.0)
             m = re.search(r"id=['\"]cur_channel_id['\"][^>]*value=['\"](\d+)", page.text)
             if m:
                 channel_id = int(m.group(1))
+                api_url = (f'{m_domain}/bwnew/index-tj?page=1&size=20'
+                           f'&channel_id={channel_id}&wz_id=1')
         except Exception as e:
             errors.append(f'探测channel_id: {e}')
-    if channel_id:
+    if channel_id and api_url is None:
         api_url = (f'{m_domain}/bwnew/index-tj?page=1&size=20'
                    f'&channel_id={channel_id}&wz_id=1')
 
-    candidates = [('desktop', r_url, parse_desktop)]
-    if api_url:
-        candidates.append(('mapi', api_url, parse_mapi))
-    candidates.append(('jina', f'{JINA}/{r_url}', parse_jina))
+    # ① www 桌面站:仅在放行窗口内可通,短预算止损
+    try:
+        res = fetch_with_deadline(r_url, deadline=DESKTOP_SLICE,
+                                  timeout=DESKTOP_SLICE + 1.0)
+        items = parse_desktop(res)
+        if not items:
+            raise ValueError('桌面站解析为空')
+        return _ok('desktop', items)
+    except Exception as e:
+        errors.append(f'desktop: {e}')
+        print(f'[bjnews] {category}: desktop 失败 ({time.time() - start:.1f}s): {e}')
 
-    for name, url, parser in candidates:
-        remaining = REQUEST_BUDGET - (time.time() - start)
-        if remaining < 1.2:
-            errors.append(f'{name}: 预算耗尽(剩余{remaining:.1f}s)')
-            break
-        deadline = remaining if name == 'jina' else min(SLICE, remaining)
-        try:
-            res = fetch_with_deadline(url, deadline=deadline, timeout=deadline + 1.0)
-            items = parser(res)
-            if not items:
-                raise ValueError('解析为空')
-            print(f'[bjnews] {category}: 源 {name} 成功 '
-                  f'({time.time() - start:.1f}s, {len(items)} 条)')
-            return items, channel_name, r_url
-        except Exception as e:
-            errors.append(f'{name}: {e}')
-            print(f'[bjnews] {category}: 源 {name} 失败 '
-                  f'({time.time() - start:.1f}s): {e}')
+    # ② m站 JSON 接口:间歇黑洞,多轮重试直到预算耗尽
+    if api_url:
+        rnd = 0
+        while REQUEST_BUDGET - (time.time() - start) >= 1.4:
+            rnd += 1
+            remaining = REQUEST_BUDGET - (time.time() - start)
+            deadline = min(MAPI_SLICE, remaining)
+            try:
+                res = fetch_with_deadline(api_url, deadline=deadline,
+                                          timeout=deadline + 1.0)
+                items = parse_mapi(res)
+                if not items:
+                    raise ValueError('m站接口解析为空')
+                return _ok(f'mapi(第{rnd}轮)', items)
+            except Exception as e:
+                errors.append(f'mapi第{rnd}轮: {e}')
+                print(f'[bjnews] {category}: mapi第{rnd}轮失败 '
+                      f'({time.time() - start:.1f}s): {e}')
+
+    # 全部失败:last-good 兜底(内容为最近一次成功,防冷缓存窗口 500)
+    stale = _last_good(category)
+    if stale:
+        print(f'[bjnews] {category}: 连续黑洞,返回 last-good '
+              f'({len(stale)} 条, {time.time() - start:.1f}s)')
+        return stale, channel_name, r_url
 
     raise RuntimeError(f'新京报「{category}」抓取失败: ' + ' | '.join(errors))
 

@@ -636,3 +636,30 @@ def aia_press_releases():
     from rsshub.spiders.aia.press_releases import ctx
     return render_template('main/atom.xml', **filter_content(ctx()))
 
+
+@bp.route('/chinadaily/latest')
+@bp.route('/chinadaily')
+@bp.route('/chinadaily/<path:section>')
+@swr_cache(timeout=600)  # 10分钟SWR缓存：chinadaily 跨境抓取偶发缓慢，回源抽风时返回旧数据
+def chinadaily_latest(section='china/59b8d010a3108c54ed7dfc23'):
+    from rsshub.spiders.chinadaily.latest import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(section)))
+
+
+@bp.route('/chinadailyglobal/topnews')
+@bp.route('/chinadailyglobal')
+@bp.route('/chinadailyglobal/<path:section>')
+@swr_cache(timeout=600)  # 10分钟SWR缓存：chinadailyglobal 跨境抓取偶发缓慢，回源抽风时返回旧数据
+def chinadailyglobal_topnews(section='e/5c00a33ba310eff30328c087'):
+    from rsshub.spiders.chinadailyglobal.topnews import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(section)))
+
+
+@bp.route('/zhitongcaijing/profile/<string:author_id>')
+@bp.route('/zhitongcaijing/profile')
+@swr_cache(timeout=600)  # 10分钟SWR缓存：智通财经作者专栏JSON接口,跨境偶发缓慢时返回旧数据
+def zhitongcaijing_profile(author_id='85'):
+    limit = request.args.get('limit', default=10, type=int)
+    from rsshub.spiders.zhitongcaijing.profile import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(author_id, limit=limit)))
+

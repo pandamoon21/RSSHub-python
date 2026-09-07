@@ -1052,6 +1052,56 @@
 <!--item info start-->
 <div class="card text-left">
         <div class="card-body">
+                <h4 class="card-title">中国日报 - Latest</h4>
+                <h6 class="text-muted">China Daily - China 频道最新列表<a href="https://github.com/hillerliao"
+                                target="_blank" class="badge badge-secondary">by hillerliao</a></h6>
+                <p class="card-text">举例：<a href="https://pyrsshub.vercel.app/chinadaily/latest"
+                                target="_blank">https://pyrsshub.vercel.app/chinadaily/latest</a></p>
+                <p class="card-text">路由：<code>/chinadaily/latest</code></p>
+                <p class="card-text">说明：抓取中国日报英文网「China / Latest（最新）」新闻列表，默认 20 条；也支持 <code>/chinadaily/:section</code> 传入其他相同布局的栏目列表路径</p>
+        </div>
+</div>
+<br>
+<!--item info end-->
+
+<!--item info start-->
+<div class="card text-left">
+        <div class="card-body">
+                <h4 class="card-title">中国日报(国际版) - Top News</h4>
+                <h6 class="text-muted">China Daily Global - Top News 头条列表<a href="https://github.com/hillerliao"
+                                target="_blank" class="badge badge-secondary">by hillerliao</a></h6>
+                <p class="card-text">举例：<a href="https://pyrsshub.vercel.app/chinadailyglobal/topnews"
+                                target="_blank">https://pyrsshub.vercel.app/chinadailyglobal/topnews</a></p>
+                <p class="card-text">路由：<code>/chinadailyglobal/topnews</code></p>
+                <p class="card-text">说明：抓取中国日报国际版网站（chinadailyglobal.com）「Top News（头条）」列表，默认 20 条；也支持 <code>/chinadailyglobal/:section</code> 传入其他相同布局的栏目列表路径</p>
+        </div>
+</div>
+<br>
+<!--item info end-->
+
+<!--item info start-->
+<div class="card text-left">
+        <div class="card-body">
+                <h4 class="card-title">智通财经 - 作者专栏</h4>
+                <h6 class="text-muted">智通财经 作者专栏文章列表<a href="https://github.com/hillerliao"
+                                target="_blank" class="badge badge-secondary">by hillerliao</a></h6>
+                <p class="card-text">举例：<a href="https://pyrsshub.vercel.app/zhitongcaijing/profile/85"
+                                target="_blank">https://pyrsshub.vercel.app/zhitongcaijing/profile/85</a></p>
+                <p class="card-text">路由：<code>/zhitongcaijing/profile/:author_id</code></p>
+                <p class="card-text">参数：</p>
+                <ul>
+                        <li><code>author_id</code> [可选，作者/专栏 id，默认 85，对应<a href="https://www.zhitongcaijing.com/author/profile/85.html" target="_blank">智通数据专栏</a>]</li>
+                        <li><code>limit</code> [可选，限制条数，默认 10]</li>
+                </ul>
+                <p class="card-text">说明：基于站点 <code>/column/detail.html?data_type=1&amp;id=&lt;author_id&gt;</code> JSON 接口拉取专栏首页文章，默认返回最新 10 条</p>
+        </div>
+</div>
+<br>
+<!--item info end-->
+
+<!--item info start-->
+<div class="card text-left">
+        <div class="card-body">
                 <h4 class="card-title">微信公众号 - 最新文章 - 搜狗方案</h4>
                 <h6 class="text-muted">微信公众号 - 最新文章 <a href="https://github.com/hillerliao" target="_blank"
                                 class="badge badge-secondary">by hillerliao</a></h6>

@@ -1,5 +1,6 @@
 import time
 import re
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from datetime import datetime, timedelta, timezone
 from bs4 import BeautifulSoup
 from rsshub.utils import fetch_with_deadline
@@ -20,6 +21,7 @@ m_domain = 'https://m.bjnews.com.cn'
 REQUEST_BUDGET = 8.0
 DESKTOP_SLICE = 1.5  # www 已基本全黑洞,给短预算止损
 MAPI_SLICE = 2.2     # m 站 API 单轮预算;黑洞 2.2s 秒超时,成功多在 1~3s
+MAPI_ATTEMPTS = 3    # 并发竞速,避免串行重试耗尽 Vercel 函数预算
 LAST_GOOD_TTL = 6 * 3600  # last-good 兜底最大时长(秒)
 
 # 频道元信息:category -> (m站 channel_id, 中文名)
@@ -176,24 +178,39 @@ def _fetch(category):
         errors.append(f'desktop: {e}')
         print(f'[bjnews] {category}: desktop 失败 ({time.time() - start:.1f}s): {e}')
 
-    # ② m站 JSON 接口:间歇黑洞,多轮重试直到预算耗尽
+    # ② m站 JSON 接口:间歇黑洞,并发竞速多个独立连接
     if api_url:
-        rnd = 0
-        while REQUEST_BUDGET - (time.time() - start) >= 1.4:
-            rnd += 1
-            remaining = REQUEST_BUDGET - (time.time() - start)
-            deadline = min(MAPI_SLICE, remaining)
+        remaining = REQUEST_BUDGET - (time.time() - start)
+        if remaining >= 1.4:
+            executor = ThreadPoolExecutor(max_workers=MAPI_ATTEMPTS)
+            futures = [executor.submit(fetch_with_deadline, api_url,
+                                       deadline=min(MAPI_SLICE, remaining),
+                                       timeout=min(MAPI_SLICE, remaining) + 1.0)
+                       for _ in range(MAPI_ATTEMPTS)]
             try:
-                res = fetch_with_deadline(api_url, deadline=deadline,
-                                          timeout=deadline + 1.0)
-                items = parse_mapi(res)
-                if not items:
-                    raise ValueError('m站接口解析为空')
-                return _ok(f'mapi(第{rnd}轮)', items)
-            except Exception as e:
-                errors.append(f'mapi第{rnd}轮: {e}')
-                print(f'[bjnews] {category}: mapi第{rnd}轮失败 '
-                      f'({time.time() - start:.1f}s): {e}')
+                while futures:
+                    left = REQUEST_BUDGET - (time.time() - start)
+                    if left <= 0:
+                        break
+                    done, pending = wait(futures, timeout=left,
+                                         return_when=FIRST_COMPLETED)
+                    if not done:
+                        break
+                    futures = list(pending)
+                    for future in done:
+                        rnd = MAPI_ATTEMPTS - len(futures)
+                        try:
+                            items = parse_mapi(future.result())
+                            if not items:
+                                raise ValueError('m站接口解析为空')
+                            return _ok(f'mapi竞速({rnd}号)', items)
+                        except Exception as e:
+                            errors.append(f'mapi竞速: {e}')
+                            print(f'[bjnews] {category}: mapi竞速失败 '
+                                  f'({time.time() - start:.1f}s): {e}')
+            finally:
+                # 请求线程由 fetch_with_deadline 设为 daemon,不让清理阻塞响应。
+                executor.shutdown(wait=False, cancel_futures=True)
 
     # 全部失败:last-good 兜底(内容为最近一次成功,防冷缓存窗口 500)
     stale = _last_good(category)

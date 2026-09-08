@@ -23,6 +23,9 @@ DESKTOP_SLICE = 1.5  # www 已基本全黑洞,给短预算止损
 MAPI_SLICE = 2.2     # m 站 API 单轮预算;黑洞 2.2s 秒超时,成功多在 1~3s
 MAPI_ATTEMPTS = 3    # 并发竞速,避免串行重试耗尽 Vercel 函数预算
 LAST_GOOD_TTL = 6 * 3600  # last-good 兜底最大时长(秒)
+FETCH_RETRIES = 1       # 整轮抓取失败后立即再试一次
+LAST_GOOD_TTL = 6 * 3600  # last-good 兜底最大时长(秒)
+TOTAL_BUDGET = 10.0       # 两次抓取总共允许的墙钟秒数
 
 # 频道元信息:category -> (m站 channel_id, 中文名)
 # m站接口 /bwnew/index-tj 需要 channel_id;名称用于 API 兜底时的 feed 标题。
@@ -132,7 +135,7 @@ def _save_good(category, items):
     _LAST_GOOD[category] = (items, time.time())
 
 
-def _fetch(category):
+def _fetch_once(category, budget=REQUEST_BUDGET):
     """预算内抓取:www 桌面站快速试探 → m站 JSON 接口多轮重试。
 
     全部失败:若同进程此前成功过且未过期,返回 last-good 避免 500;否则抛异常
@@ -180,7 +183,7 @@ def _fetch(category):
 
     # ② m站 JSON 接口:间歇黑洞,并发竞速多个独立连接
     if api_url:
-        remaining = REQUEST_BUDGET - (time.time() - start)
+        remaining = budget - (time.time() - start)
         if remaining >= 1.4:
             executor = ThreadPoolExecutor(max_workers=MAPI_ATTEMPTS)
             futures = [executor.submit(fetch_with_deadline, api_url,
@@ -189,7 +192,7 @@ def _fetch(category):
                        for _ in range(MAPI_ATTEMPTS)]
             try:
                 while futures:
-                    left = REQUEST_BUDGET - (time.time() - start)
+                    left = budget - (time.time() - start)
                     if left <= 0:
                         break
                     done, pending = wait(futures, timeout=left,
@@ -212,13 +215,25 @@ def _fetch(category):
                 # 请求线程由 fetch_with_deadline 设为 daemon,不让清理阻塞响应。
                 executor.shutdown(wait=False, cancel_futures=True)
 
-    # 全部失败:last-good 兜底(内容为最近一次成功,防冷缓存窗口 500)
+    raise RuntimeError(f'新京报「{category}」抓取失败: ' + ' | '.join(errors))
+
+
+def _fetch(category):
+    """整轮抓取失败后立即重试一次;失败结果不进入缓存。"""
+    errors = []
+    attempt_budget = TOTAL_BUDGET / (FETCH_RETRIES + 1)
+    for attempt in range(1, FETCH_RETRIES + 2):
+        try:
+            return _fetch_once(category, budget=attempt_budget)
+        except Exception as e:
+            errors.append(f'第{attempt}轮: {e}')
+            if attempt <= FETCH_RETRIES:
+                print(f'[bjnews] {category}: 第{attempt}轮失败, 立即重试: {e}')
     stale = _last_good(category)
     if stale:
-        print(f'[bjnews] {category}: 连续黑洞,返回 last-good '
-              f'({len(stale)} 条, {time.time() - start:.1f}s)')
-        return stale, channel_name, r_url
-
+        channel_name = _m_channel(category)[1]
+        print(f'[bjnews] {category}: 重试仍失败,返回 last-good ({len(stale)} 条)')
+        return stale, channel_name, f'{domain}/{category}'
     raise RuntimeError(f'新京报「{category}」抓取失败: ' + ' | '.join(errors))
 
 

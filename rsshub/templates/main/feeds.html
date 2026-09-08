@@ -1092,8 +1092,17 @@
                 <ul>
                         <li><code>author_id</code> [可选，作者/专栏 id，默认 85，对应<a href="https://www.zhitongcaijing.com/author/profile/85.html" target="_blank">智通数据专栏</a>]</li>
                         <li><code>limit</code> [可选，限制条数，默认 10]</li>
+                        <li><code>name</code> [可选，自定义显示名。默认从作者页 <code>&lt;title&gt;</code>(形如「专栏-智通财经网-智通数据」)动态切出专栏名，切不到时退化为「专栏 #&lt;id&gt;」]</li>
                 </ul>
                 <p class="card-text">说明：基于站点 <code>/column/detail.html?data_type=1&amp;id=&lt;author_id&gt;</code> JSON 接口拉取专栏首页文章，默认返回最新 10 条</p>
+
+                <h6 class="text-muted">智通财经 主题聚合<a href="https://github.com/hillerliao" target="_blank"
+                                class="badge badge-secondary">by hillerliao</a></h6>
+                <p class="card-text">举例：<a href="https://pyrsshub.vercel.app/zhitongcaijing/theme/20"
+                                target="_blank">https://pyrsshub.vercel.app/zhitongcaijing/theme/20</a>（隔夜美股）</p>
+                <p class="card-text">路由：<code>/zhitongcaijing/theme/:theme_id</code></p>
+                <p class="card-text">参数：theme_id [必填，主题 id，例如 20（隔夜美股），对应<a href="https://www.zhitongcaijing.com/theme/detail/20.html" target="_blank">智通财经主题页</a>]</p>
+                <p class="card-text">说明：基于站点 <code>/theme/article-list.html?id=&lt;theme_id&gt;&amp;page=&lt;n&gt;</code> JSON 接口聚合主题列表，默认取前 2 页约 40 条</p>
         </div>
 </div>
 <br>

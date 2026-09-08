@@ -87,7 +87,25 @@ def _fetch_page(author_id, page):
     return items
 
 
-def ctx(author_id='85', limit=PAGE_SIZE):
+def _extract_column_name(html):
+    """从作者页 <title> 中切出专栏名。
+
+    服务端 HTML 里的 <title> 形如 "专栏-智通财经网-智通数据",最后一段就是
+    专栏显示名;取不到时回落到 None。
+    """
+    if not html:
+        return None
+    m = re.search(r'<title>\s*([^<]+?)\s*</title>', html)
+    if not m:
+        return None
+    parts = [p.strip() for p in m.group(1).split('－')] if '－' in m.group(1) \
+        else [p.strip() for p in m.group(1).split('-')]
+    if len(parts) >= 2 and parts[-1]:
+        return parts[-1]
+    return None
+
+
+def ctx(author_id='85', limit=PAGE_SIZE, name=''):
     author_id = str(author_id).strip() or '85'
     page_url = f'{domain}/author/profile/{author_id}.html'
 
@@ -100,10 +118,27 @@ def ctx(author_id='85', limit=PAGE_SIZE):
     if not items:
         raise RuntimeError(f'智通财经专栏 {author_id} 解析为空(页面结构可能已变更)')
 
+    # 展示名优先级:?name= > 作者页 <title> 切出来的专栏名 > '专栏 #<id>'
+    display_name = (name or '').strip()
+    if not display_name:
+        try:
+            res = fetch_with_deadline(page_url, deadline=REQUEST_BUDGET,
+                                      timeout=REQUEST_BUDGET + 1.0)
+            display_name = _extract_column_name(res.text) or ''
+        except Exception:
+            display_name = ''
+
+    if display_name:
+        feed_title = f'智通财经 - {display_name}'
+        feed_desc = f'智通财经专栏「{display_name}」(#{author_id}) 的最新文章'
+    else:
+        feed_title = f'智通财经 - 专栏 #{author_id}'
+        feed_desc = f'智通财经作者/专栏 #{author_id} 的最新文章'
+
     return {
-        'title': f'智通财经 - 专栏 #{author_id}',
+        'title': feed_title,
         'link': page_url,
-        'description': f'智通财经作者/专栏 #{author_id} 的最新文章',
+        'description': feed_desc,
         'author': 'hillerliao',
         'items': items,
     }

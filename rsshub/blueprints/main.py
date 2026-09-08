@@ -516,6 +516,13 @@ def zhihu_question(qid):
     return render_template('main/atom.xml', **filter_content(ctx_question(qid)))
 
 
+@bp.route('/zhitongcaijing/theme/<string:theme_id>')
+@cache.cached(timeout=3600)
+def zhitongcaijing_theme(theme_id=''):
+    from rsshub.spiders.zhitongcaijing.theme import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(theme_id)))
+
+
 @bp.route('/xueqiu/user/<string:user_id>')
 @swr_cache(timeout=1800)  # 30分钟缓存
 def xueqiu_user(user_id):
@@ -660,6 +667,7 @@ def chinadailyglobal_topnews(section='e/5c00a33ba310eff30328c087'):
 @swr_cache(timeout=600)  # 10分钟SWR缓存：智通财经作者专栏JSON接口,跨境偶发缓慢时返回旧数据
 def zhitongcaijing_profile(author_id='85'):
     limit = request.args.get('limit', default=10, type=int)
+    name = request.args.get('name', default='', type=str)
     from rsshub.spiders.zhitongcaijing.profile import ctx
-    return render_template('main/atom.xml', **filter_content(ctx(author_id, limit=limit)))
+    return render_template('main/atom.xml', **filter_content(ctx(author_id, limit=limit, name=name)))
 

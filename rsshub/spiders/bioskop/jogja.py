@@ -11,7 +11,6 @@ semua device), bukan kredensial per-akun — cuma buat token anonim.
 `slot` milih daftarnya:
     now    - sedang tayang
     soon   - coming soon
-    otw    - alias dari soon
 """
 import hashlib
 import time
@@ -173,11 +172,11 @@ def _rujak(post, kind):
 
 
 def ctx(slot='now', city_id=''):
-    """slot - now | soon | otw (soon/otw alias to the upcoming list)
+    """slot - now | soon
 
     city_id - optional bioskop city id, forwarded upstream to scope the list.
     """
-    kind = "soon" if slot in ("soon", "otw", "upcoming") else "now"
+    kind = "soon" if slot == "soon" else "now"
     path = _A2 + (_A3 if kind == "now" else _A4) + f"?tz={_V}"
     if city_id:
         path += f"&city_id={city_id}"

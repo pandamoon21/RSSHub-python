@@ -56,9 +56,9 @@ def ctx(theme_id=''):
             except Exception as e:
                 errors.append(f'item skip: {e}')
     return {
-        'title': f'智通财经 - 主题 {theme_id}',
+        'title': f'Zhitongcaijing - Theme {theme_id}',
         'link': f'{domain}/theme/detail/{theme_id}.html',
-        'description': '智通财经主题聚合' + ('（部分页面获取失败）' if errors else ''),
+        'description': 'Zhitongcaijing theme aggregate' + (' (some pages failed to load)' if errors else ''),
         'author': 'hillerliao',
         'items': items,
     }

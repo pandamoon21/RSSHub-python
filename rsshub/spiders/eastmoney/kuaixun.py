@@ -120,7 +120,7 @@ def ctx(category='all'):
         description += f' (部分分类获取失败: {"; ".join(errors)})'
 
     return {
-        'title': f'{name} - 东方财富网快讯',
+        'title': f'{name} - Eastmoney Newsflash',
         'link': page,
         'description': description,
         'author': 'hillerliao',

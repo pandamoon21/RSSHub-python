@@ -33,9 +33,9 @@ def ctx(category=''):
     posts = res
     items = list(map(parse, posts))
     return {
-        'title': f'{category} - 网易跟贴',
+        'title': f'{category} - Netease Comments',
         'link': "https://comment.163.com/#/" + category,
-        'description': f'{category} - 网易跟贴',
+        'description': f'{category} - Netease Comments',
         'author': 'hillerliao',
         'items': items
     }

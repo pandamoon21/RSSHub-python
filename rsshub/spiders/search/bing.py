@@ -32,9 +32,9 @@ def ctx(keyword=''):
     except Exception as e:
         print(f'[Bing Suggest Error] {e}')
     return {
-        'title': f'{keyword} - 搜索提示 - Bing',
+        'title': f'{keyword} - Search Suggestions - Bing',
         'link': f'{domain}/search?q={quote(keyword)}',
-        'description': 'Bing 搜索提示',
+        'description': 'Bing Search Suggestions',
         'author': 'hillerliao',
         'items': items
     }

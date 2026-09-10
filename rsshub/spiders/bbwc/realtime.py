@@ -43,9 +43,9 @@ def ctx(category=''):
         # 分类无效或未指定时回退到首页推荐流，避免空 feed / 404
         posts = fetch_posts(f'{domain}/web/home/articlelist/device/30/p/1')
     return {
-        'title': f'即时新闻 - 商业周刊',
+        'title': 'Realtime - Bloomberg Businessweek',
         'link': f'{domain}/realtime/index.html',
-        'description': f'抓取彭博商业周刊即时新闻栏目的快讯',
+        'description': 'Newsflash feed from Bloomberg Businessweek\'s realtime section',
         'author': 'hillerliao',
         'items': list(map(parse, posts))
     }

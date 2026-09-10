@@ -70,9 +70,9 @@ def ctx(type=''):
 
 
     return {
-        'title': f'{type} - 湖南竞价',
+        'title': f'{type} - Hunan Bidding',
         'link': f'{domain}/bidding/',
-        'description': f'政采云”是政府采购云计算服务平台的简称。以互联⽹为基础，充分运⽤云计算和⼤数据技术，以政府采购电⼦化交易和管理为重点，涉及政府采购全流程、各领域、多用户，集政府采购、网上交易、⽹上监管和⽹上服务为一体的综合性云服务平台。',
+        'description': 'Hunan government procurement bidding information feed.',
         'author': 'hillerliao',
         'items': items
     }

@@ -59,9 +59,9 @@ def ctx(category=''):
             except Exception as e:
                 print(f'[Baidu Suggest] fetch failed: {e}')
     return {
-        'title': f'{category} - 搜索提示 - 百度',
+        'title': f'{category} - Search Suggestions - Baidu',
         'link': f'https://www.baidu.com/s?ie=UTF-8&wd={category}',
-        'description': f'百度搜索提示',
+        'description': 'Baidu Search Suggestions',
         'author': 'hillerliao',
         'items': items
     }

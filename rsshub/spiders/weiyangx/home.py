@@ -26,8 +26,8 @@ def ctx():
     posts = json.loads(posts)
     items = list(map(parse, posts))
     return {
-        'title': f'首页 - 未央网',
-        'description': f'首页推荐栏目 - 未央网',
+        'title': 'Home - Weiyangx',
+        'description': 'Homepage recommendations - Weiyangx',
         'link': f'{domain}',
         'author': f'hillerliao',
         'items': items

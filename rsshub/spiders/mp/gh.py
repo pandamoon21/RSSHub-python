@@ -343,7 +343,7 @@ def ctx(gh='', pages=2, resolve_url=True, source_filter=None):
     return {
         'title': feed_title,
         'link': base_url,
-        'description': f'搜狗微信文章搜索结果: {gh}{alias_note}',
+        'description': f'Sogou WeChat article search results: {gh}{alias_note}',
         'author': 'hillerliao',
         'items': all_items,
     }

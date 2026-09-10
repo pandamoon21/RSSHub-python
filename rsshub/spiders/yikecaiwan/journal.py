@@ -53,9 +53,9 @@ def parse_item(li):
 def ctx():
     tree = fetch(JOURNAL_URL, headers=DEFAULT_HEADERS)
     empty_feed = {
-        'title': '一刻财闻 · 美股晨报',
+        'title': 'Yikecaiwan - US Market Morning Brief',
         'link': JOURNAL_URL,
-        'description': '一刻财闻每日美股晨报',
+        'description': 'Yikecaiwan daily US market morning brief',
         'author': 'yikecaiwan.com',
         'items': [],
     }
@@ -94,9 +94,9 @@ def ctx():
             session.close()
 
     return {
-        'title': '一刻财闻 · 美股晨报',
+        'title': 'Yikecaiwan - US Market Morning Brief',
         'link': JOURNAL_URL,
-        'description': '一刻财闻每日美股晨报',
+        'description': 'Yikecaiwan daily US market morning brief',
         'author': 'yikecaiwan.com',
         'items': items,
     }

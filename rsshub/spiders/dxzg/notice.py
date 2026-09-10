@@ -19,17 +19,17 @@ def ctx(category=''):
     tree = fetch(url)
     if not tree:
          return {
-            'title': '东兴资管产品最新公告',
+            'title': 'Dongxing Asset Management - Latest Product Announcements',
             'link': url,
-            'description': '东兴资管产品最新公告',
+            'description': 'Dongxing Asset Management - Latest Product Announcements',
             'author': 'hillerliao',
             'items': []
         }
     posts = tree.select('.news_list li')
     return {
-        'title': '东兴资管产品最新公告',
+        'title': 'Dongxing Asset Management - Latest Product Announcements',
         'link': url,
-        'description': '东兴资管产品最新公告',
+        'description': 'Dongxing Asset Management - Latest Product Announcements',
         'author': 'hillerliao',
         'items': list(map(parse, posts)) 
     }

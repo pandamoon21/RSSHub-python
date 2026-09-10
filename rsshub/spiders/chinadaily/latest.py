@@ -88,7 +88,7 @@ def ctx(section=DEFAULT_SECTION):
     return {
         'title': f'{channel} - China Daily',
         'link': url,
-        'description': f'China Daily - {channel} 频道新闻列表',
+        'description': f'China Daily - {channel} channel news list',
         'author': 'China Daily',
         'items': items,
     }

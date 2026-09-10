@@ -15,9 +15,9 @@ def ctx():
     列表页服务端渲染当年全部新闻稿，逐篇抓取详情页正文作为 description。
     """
     empty_feed = {
-        'title': 'AIA Hong Kong 新闻稿',
+        'title': 'AIA Hong Kong Press Releases',
         'link': BASE,
-        'description': 'AIA Hong Kong（友邦香港）新聞稿 Press Releases',
+        'description': 'AIA Hong Kong Press Releases',
         'author': 'AIA Hong Kong',
         'items': [],
     }
@@ -95,9 +95,9 @@ def ctx():
         item.pop('_order', None)
 
     return {
-        'title': 'AIA Hong Kong 新闻稿',
+        'title': 'AIA Hong Kong Press Releases',
         'link': BASE,
-        'description': 'AIA Hong Kong（友邦香港）新聞稿 Press Releases',
+        'description': 'AIA Hong Kong Press Releases',
         'author': 'AIA Hong Kong',
         'items': items,
     }

@@ -79,15 +79,15 @@ def ctx(user_id=None):
     """主函数"""
     if not user_id:
         return {
-            'title': '雪球用户动态',
+            'title': 'Xueqiu User Timeline',
             'link': 'https://xueqiu.com/',
-            'description': '雪球用户最新动态',
+            'description': 'Latest activity from Xueqiu users',
             'items': []
         }
     
     if not HAS_PLAYWRIGHT:
         return {
-            'title': f'用户{user_id} - 雪球动态 (Not supported on Vercel)',
+            'title': f'User {user_id} - Xueqiu Timeline (Not supported on Vercel)',
             'link': f"https://xueqiu.com/u/{user_id}",
             'description': 'Playwright is not available in this environment. Please use the self-hosted version for this feed.',
             'author': 'hillerliao',
@@ -104,12 +104,12 @@ def ctx(user_id=None):
         print(f"Error fetching Xueqiu user {user_id}: {e}")
         result = {
             'screen_name': f'用户{user_id}',
-            'description': '雪球用户',
+            'description': 'Xueqiu user',
             'posts': []
         }
     items = [parse_status(s, user_id, result['screen_name']) for s in result['posts']]
     return {
-        'title': f"{result['screen_name']} - 雪球动态",
+        'title': f"{result['screen_name']} - Xueqiu Timeline",
         'link': f"https://xueqiu.com/u/{user_id}",
         'description': f"{result['description']}",
         'author': 'hillerliao',

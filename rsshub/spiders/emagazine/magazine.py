@@ -106,26 +106,26 @@ def ctx(category=''):
         
         # 返回RSS结构
         return {
-            'title': 'EMagazine - 最新电子书',
+            'title': 'EMagazine - Latest Ebooks',
             'link': f'{domain}/opds/new',
-            'description': 'EMagazine 最新电子书资源，包含各类杂志和期刊',
+            'description': 'EMagazine latest ebook resources, including magazines and journals',
             'author': 'emagazine.link',
             'items': items
         }
         
     except requests.RequestException as e:
         return {
-            'title': 'EMagazine - 最新电子书',
+            'title': 'EMagazine - Latest Ebooks',
             'link': f'{domain}/opds/new',
-            'description': 'EMagazine 最新电子书资源 - 请求失败',
+            'description': 'EMagazine latest ebook resources - request failed',
             'author': 'emagazine.link',
             'items': []
         }
     except Exception as e:
         return {
-            'title': 'EMagazine - 最新电子书',
+            'title': 'EMagazine - Latest Ebooks',
             'link': f'{domain}/opds/new',
-            'description': 'EMagazine 最新电子书资源 - 解析失败',
+            'description': 'EMagazine latest ebook resources - parse failed',
             'author': 'emagazine.link',
             'items': []
         }

@@ -63,9 +63,9 @@ def ctx(category=''):
 
     items = list(map(parse, posts))
     return {
-        'title': f'{name} - 界面新闻',
+        'title': f'{name} - Jiemian News',
         'link': url,
-        'description': f'{name} - 界面新闻',
+        'description': f'{name} - Jiemian News',
         'author': 'hillerliao',
         'items': items
     }

@@ -32,9 +32,9 @@ def ctx(category=''):
     title_elem = tree.select('title')
     app_name = title_elem[0].get_text() if title_elem else ''
     return {
-        'title': f'{title} - 蒲公英',
+        'title': f'{title} - Pgyer',
         'link': url,
-        'description': f'{app_name} 安装包更新 - 蒲公英',
+        'description': f'{app_name} package updates - Pgyer',
         'author': 'hillerliao',
         'items': list(map(parse, posts)) 
     }

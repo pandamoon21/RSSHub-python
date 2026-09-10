@@ -18,9 +18,9 @@ def ctx(category=''):
     tree = fetch(f'{domain}/python/topics/{category}')
     posts = tree.select('ul.note-list li')
     return {
-        'title': 'CTOLib码库',
+        'title': 'CTOLib',
         'link': domain,
-        'description': 'Python开发社区',
+        'description': 'Python developer community',
         'author': 'alphardex',
         'items': list(map(parse, posts))
     }

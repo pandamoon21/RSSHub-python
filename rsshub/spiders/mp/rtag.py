@@ -25,9 +25,9 @@ def ctx(c1='', tag=''):
     posts = pyjsparser.parse(scripts)['body'][0]['expression']['elements']
     
     return {
-        'title': f'{tag} - 微信公众号推荐话题',
+        'title': f'{tag} - WeChat Official Account Recommended Topics',
         'link': url,
-        'description': f'{tag} - 微信公众号推荐话题',
+        'description': f'{tag} - WeChat Official Account Recommended Topics',
         'author': 'hillerliao',
         'items': list(map(parse, posts)) 
     }

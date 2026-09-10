@@ -155,9 +155,9 @@ def parse(selector):
 def ctx(category=''):
     tree = asyncio.run(fetch_by_puppeteer(domain))
     return {
-        'title': '中山大学中法核官网信息',
+        'title': 'Sun Yat-sen University Sino-French Institute of Nuclear Engineering',
         'link': domain,
-        'description': '中山大学中法核官网通知公告',
+        'description': 'Sun Yat-sen University Sino-French Institute of Nuclear Engineering - notices',
         'author': 'echo',
         'items': parse(tree)
     }

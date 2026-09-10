@@ -33,9 +33,9 @@ def parse_pubdate(title, year, week):
 def ctx():
     url = f'{domain}/weekly/'
     feed = {
-        'title': '一颗财丸 - 周报',
+        'title': 'Yikecaiwan - Weekly',
         'link': url,
-        'description': '一颗财丸(yikecaiwan.com)每周投资周报',
+        'description': 'Yikecaiwan (yikecaiwan.com) weekly investment report',
         'author': 'hillerliao',
         'items': []
     }
@@ -56,7 +56,7 @@ def ctx():
         if key in issues and len(title) <= len(issues[key]['title']):
             continue
         issues[key] = {
-            'title': title or f'{key[0]}年第{key[1]}周周报',
+            'title': title or f'Weekly Report {key[0]} W{key[1]}',
             'link': f'{domain}/weekly/{key[0]:04d}-W{key[1]:02d}',
             'pubDate': parse_pubdate(title, key[0], key[1]),
             'author': '一颗财丸'

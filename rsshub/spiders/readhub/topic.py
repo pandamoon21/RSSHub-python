@@ -44,9 +44,9 @@ def ctx(type='', uid=''):
             print(f'[readhub/topic] 跳过异常条目: {e}')
 
     return {
-        'title': f'{topic_name} - 主题 - Readhub',
+        'title': f'{topic_name} - Topic - Readhub',
         'link': referer,
-        'description': f'"{topic_name}"动态' + (' (数据获取失败或暂无内容)' if not items else ''),
+        'description': f'\"{topic_name}\" updates' + (' (fetch failed or no content)' if not items else ''),
         'author': 'hillerliao',
         'items': items,
     }

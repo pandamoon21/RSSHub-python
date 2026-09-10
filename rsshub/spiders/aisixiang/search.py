@@ -23,17 +23,17 @@ def ctx(category='', keywords=''):
     tree = fetch(url, headers=DEFAULT_HEADERS)
     if not tree:
         return {
-            'title': f'{keywords} - {category}搜索 - 爱思想',
+            'title': f'{keywords} - {category} Search - Aisixiang',
             'link': url,
-            'description': f'{keywords} - {category}搜索 - 爱思想',
+            'description': f'{keywords} - {category} Search - Aisixiang',
             'author': 'hillerliao',
             'items': []
         }
     posts = tree.select('.search_list li')
     return {
-        'title': f'{keywords} - {category}搜索 - 爱思想',
+        'title': f'{keywords} - {category} Search - Aisixiang',
         'link': url,
-        'description': f'{keywords} - {category}搜索 - 爱思想',
+        'description': f'{keywords} - {category} Search - Aisixiang',
         'author': 'hillerliao',
         'items': list(map(parse, posts))
     }

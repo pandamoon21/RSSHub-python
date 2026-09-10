@@ -28,7 +28,7 @@ def ctx(category=''):
     return {
         'title': f'{feed_title} - Profile - InfoQ',
         'link': referer,
-        'description': 'InfoQ - 促进软件开发领域知识与创新的传播',
+        'description': 'InfoQ - spreading knowledge and innovation in software development',
         'author': 'hillerliao',
         'items': list(map(parse, posts))
     }

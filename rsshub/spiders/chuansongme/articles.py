@@ -17,17 +17,17 @@ def ctx(category=''):
     tree = fetch(url)
     if not tree:
          return {
-            'title': '传送门',
+            'title': 'Chuansongme',
             'link': domain,
-            'description': '传送门：微信公众号订阅',
+            'description': 'Chuansongme: WeChat Official Account subscription',
             'author': 'alphardex',
             'items': []
         }
     posts = tree.select('.feed_body .pagedlist_item')
     return {
-        'title': '传送门',
+        'title': 'Chuansongme',
         'link': domain,
-        'description': '传送门：微信公众号订阅',
+        'description': 'Chuansongme: WeChat Official Account subscription',
         'author': 'alphardex',
         'items': list(map(parse, posts))
     }

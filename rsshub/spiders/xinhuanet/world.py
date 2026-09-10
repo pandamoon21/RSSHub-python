@@ -9,9 +9,9 @@ def ctx():
     tree = fetch(url, headers=DEFAULT_HEADERS)
     posts = tree.select('#recommendDepth a')
     return {
-        'title': '新华网 - 国际要闻',
+        'title': 'Xinhuanet - World News',
         'link': url,
-        'description': '新华网 - 国际要闻',
+        'description': 'Xinhuanet - World News',
         'author': 'flyingicedragon',
         'items': list(map(parse, posts)),
     }

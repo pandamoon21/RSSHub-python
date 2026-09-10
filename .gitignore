@@ -36,3 +36,10 @@ tmp*
 # AI tooling artifacts
 .codebuddy/
 .zcode/
+
+# local agent tooling
+.omc/
+.sisyphus/
+
+# scratch
+fitgirl_test.html

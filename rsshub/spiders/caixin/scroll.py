@@ -23,9 +23,9 @@ def ctx(category=''):
     data = res.json()
     posts = data.get('data', {}).get('articleList', [])
     return {
-        'title': '财新网滚动新闻',
+        'title': 'Caixin Scroll News',
         'link': 'https://www.caixin.com/search/newscroll',
-        'description': '财新网滚动新闻',
+        'description': 'Caixin Scroll News',
         'author': 'hillerliao',
         'items': list(map(parse, posts)) 
     }

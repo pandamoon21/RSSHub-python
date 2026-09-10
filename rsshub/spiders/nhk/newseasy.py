@@ -23,7 +23,7 @@ def ctx(category=''):
     return {
         'title': 'News Web Easy - NHK',
         'link': f'{domain}/news/easy/',
-        'description': 'NEWS WEB EASYは、小学生・中学生の皆さんや、日本に住んでいる外国人のみなさんに、わかりやすいことば　でニュースを伝えるウェブサイトです。',
+        'description': 'NEWS WEB EASY presents news in simple Japanese for students and foreign residents in Japan.',
         'author': 'hillerliao',
         'items': list(map(parse, posts)),
     }

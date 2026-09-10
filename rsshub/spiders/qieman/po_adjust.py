@@ -243,9 +243,9 @@ def ctx(portfolio_id='SI000108'):
         items = [parse_si(p, i) for i, p in enumerate(posts)]
 
     return {
-        'title': f'{po_name or "Qieman"}({portfolio_id})-且慢发车记录',
+        'title': f'{po_name or "Qieman"}({portfolio_id}) - Qieman Rebalance Records',
         'link': f'https://qieman.com/alfa/portfolio/{portfolio_id}/adjustment' if portfolio_id.startswith('ZH') else f'https://qieman.com/sig/portfolios/{portfolio_id}/adjustments?tab=history',
-        'description': po_desc or f'且慢组合 {portfolio_id} 的调仓记录',
+        'description': po_desc or f'Rebalance records for Qieman portfolio {portfolio_id}',
         'author': 'hillerliao',
         'items': items
     }

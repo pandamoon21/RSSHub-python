@@ -15,9 +15,9 @@ def ctx(category='understanding-insurance'):
     page_url = f'{BASE}/{category}/'
 
     empty_feed = {
-        'title': f'Prudential 保险知识 · {category}',
+        'title': f'Prudential Knowledge Corner - {category}',
         'link': page_url,
-        'description': 'Prudential Hong Kong Knowledge Corner 保险知多啲',
+        'description': 'Prudential Hong Kong Knowledge Corner',
         'author': 'Prudential Hong Kong',
         'items': [],
     }
@@ -96,9 +96,9 @@ def ctx(category='understanding-insurance'):
         item.pop('_order', None)
 
     return {
-        'title': f'Prudential 保险知识 · {category}',
+        'title': f'Prudential Knowledge Corner - {category}',
         'link': page_url,
-        'description': 'Prudential Hong Kong Knowledge Corner 保险知多啲',
+        'description': 'Prudential Hong Kong Knowledge Corner',
         'author': 'Prudential Hong Kong',
         'items': items,
     }

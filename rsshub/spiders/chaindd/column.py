@@ -22,17 +22,17 @@ def ctx(category=''):
     tree = fetch(url)
     if not tree:
          return {
-            'title': f'链得得栏目{category}最新文章',
+            'title': f'Chaindd Column {category} - Latest Articles',
             'link': url,
-            'description': f'链得得栏目{category}最新文章',
+            'description': f'Chaindd Column {category} - Latest Articles',
             'author': 'hillerliao',
             'items': []
         }
     posts = tree.select('li .cont')
     return {
-        'title': f'链得得栏目{category}最新文章',
+        'title': f'Chaindd Column {category} - Latest Articles',
         'link': url,
-        'description': f'链得得栏目{category}最新文章',
+        'description': f'Chaindd Column {category} - Latest Articles',
         'author': 'hillerliao',
         'items': list(map(parse, posts)) 
     }

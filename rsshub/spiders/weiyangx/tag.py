@@ -27,8 +27,8 @@ def ctx(category=''):
     # posts = tree.css('script::text')[-5].extract().split('=')[-1]
     items = list(map(parse, posts))
     return {
-        'title': f'{category} - 文章 - 未央网',
-        'description': f'文章 - 未央网',
+        'title': f'{category} - Articles - Weiyangx',
+        'description': 'Articles - Weiyangx',
         'link': f'{domain}/tag/{category}',
         'author': f'hillerliao',
         'items': items

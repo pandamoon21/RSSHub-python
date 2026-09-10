@@ -29,7 +29,7 @@ def ctx(category=''):
     return {
         'title': f'{word} - NHK News',
         'link': f'{domain}/news/word/{category}.html',
-        'description': f'{word}の最新ニュース・特集一覧',
+        'description': f'{word} - latest news and features',
         'author': 'hillerliao',
         'items': list(map(parse, posts))
     }

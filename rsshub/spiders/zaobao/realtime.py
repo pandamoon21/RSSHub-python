@@ -39,17 +39,17 @@ def ctx(category=''):
     tree = fetch(url, headers=headers)
     if tree is None:
         return {
-            'title': f'{category} - 早报网即时新闻',
+            'title': f'{category} - Zaobao Realtime',
             'link': url,
-            'description': f'{category} - 早报网即时新闻',
+            'description': f'{category} - Zaobao Realtime',
             'author': 'hillerliao',
             'items': []
         }
     posts = tree.select('div.card.vertical-article-card')
     return {
-        'title': f'{category} - 早报网即时新闻',
+        'title': f'{category} - Zaobao Realtime',
         'link': url,
-        'description': f'{category} - 早报网即时新闻',
+        'description': f'{category} - Zaobao Realtime',
         'author': 'hillerliao',
         'items': list(map(parse, posts))
     }

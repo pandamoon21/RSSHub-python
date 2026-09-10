@@ -34,7 +34,7 @@ def ctx():
     return {
         'title': 'infoq',
         'link': domain,
-        'description': 'InfoQ - 促进软件开发领域知识与创新的传播',
+        'description': 'InfoQ - spreading knowledge and innovation in software development',
         'author': 'alphardex',
         'items': list(map(parse, posts))
     }

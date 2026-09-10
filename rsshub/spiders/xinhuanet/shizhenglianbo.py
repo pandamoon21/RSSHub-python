@@ -24,9 +24,9 @@ def ctx():
     ).text
     posts = json.loads(posts)['data']['list']
     return {
-        'title': '新华网 - 时政联播',
+        'title': 'Xinhuanet - Politics',
         'link': url,
-        'description': '新华网 - 时政联播',
+        'description': 'Xinhuanet - Politics',
         'author': 'flyingicedragon',
         'items': list(map(parse, posts)),
     }

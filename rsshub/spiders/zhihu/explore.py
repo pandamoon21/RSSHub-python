@@ -59,7 +59,7 @@ def ctx():
             items[i.link] = i
 
     return {
-        'title': f'发现 - 知乎',
+        'title': 'Explore - Zhihu',
         'link': r_url,
         'items': list(items.values())
     }

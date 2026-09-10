@@ -26,5 +26,5 @@ class ErrorsTestCase(BaseTestCase):
 
         response = self.client.get('/500')
         data = response.get_data(as_text=True)
-        self.assertIn('服务器出错', data)
+        self.assertIn('Server Error', data)
         self.assertEqual(response.status_code, 500)

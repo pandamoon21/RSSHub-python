@@ -82,9 +82,9 @@ def ctx(category='news'):
             print(f'[ths/realtimenews] Skipping bad item: {e}')
 
     return {
-        'title': f'{name} - 同花顺7x24实时',
+        'title': f'{name} - THS 7x24 Realtime',
         'link': page,
-        'description': f'同花顺 7x24 实时新闻 - {name}',
+        'description': f'THS 7x24 realtime news - {name}',
         'author': '同花顺',
         'items': items,
     }

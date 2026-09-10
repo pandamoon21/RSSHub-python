@@ -41,9 +41,9 @@ def ctx(category=''):
         user_name = 'Unknown'
     
     return {
-        'title': f'{user_name} - 个人主页 - 抽屉热榜',
+        'title': f'{user_name} - Profile - Chouti Hot List',
         'link': f'{domain}/publish/links/ctu_{category}',
-        'description': f'{user_name} - 个人主页 - 抽屉热榜',
+        'description': f'{user_name} - Profile - Chouti Hot List',
         'author': 'hillerliao',
         'items': list(map(parse, posts))
     }

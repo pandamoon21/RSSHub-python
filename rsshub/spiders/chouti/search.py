@@ -40,9 +40,9 @@ def ctx(category=''):
         posts = []
     
     return {
-        'title': f'{category} - 抽屉热榜',
+        'title': f'{category} - Chouti Hot List',
         'link': r_url,
-        'description': f'抽屉热榜 - {r_url}',
+        'description': f'Chouti Hot List - {r_url}',
         'author': 'hillerliao',
         'items': list(map(parse, posts))
     }

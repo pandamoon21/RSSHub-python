@@ -41,8 +41,8 @@ def ctx():
 
     items = list(map(parse, posts))
     return {
-        'title': f'快讯 - 未央网',
-        'description': f'快讯 - 未央网',
+        'title': 'Newsflash - Weiyangx',
+        'description': 'Newsflash - Weiyangx',
         'link': f'{domain}/category/express',
         'author': f'hillerliao',
         'items': items

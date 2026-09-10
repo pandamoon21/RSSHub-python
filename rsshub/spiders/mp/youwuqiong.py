@@ -36,7 +36,7 @@ def ctx(author=''):
     mp_description = desc_elem[0].get_text() if desc_elem else ''
     posts = html.select('.entry-content-wrap')
     return {
-        'title': f'{mp_name} - 公众号',
+        'title': f'{mp_name} - WeChat Official Account',
         'link': url,
         'description': mp_description,
         'author': 'hillerliao',

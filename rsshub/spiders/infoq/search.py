@@ -29,9 +29,9 @@ def ctx(category='', type=''):
     posts = requests.post(url, json=payload, headers=headers)
     posts = json.loads(posts.text)['data']['list']
     return {
-        'title': f'{category} - 搜索 - InfoQ',
+        'title': f'{category} - Search - InfoQ',
         'link': f'{domain}/search/c=0/k={category}/t=0',
-        'description': f'{category} - 极客邦搜索 - InfoQ',
+        'description': f'{category} - Geekbang search - InfoQ',
         'author': 'hillerliao',
         'items': list(map(parse, posts))
     }

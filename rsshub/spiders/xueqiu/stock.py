@@ -87,7 +87,7 @@ def ctx(symbol='TSLA'):
     """主函数：抓取雪球个股页讨论帖"""
     if not HAS_PLAYWRIGHT:
         return {
-            'title': f'{symbol} - 雪球个股讨论 (Not supported on Vercel)',
+            'title': f'{symbol} - Xueqiu Stock Discussion (Not supported on Vercel)',
             'link': f'https://xueqiu.com/S/{symbol}',
             'description': 'Playwright is not available in this environment. Please use the self-hosted version for this feed.',
             'author': 'hillerliao',
@@ -106,9 +106,9 @@ def ctx(symbol='TSLA'):
     except Exception as e:
         print(f"Error fetching Xueqiu stock {symbol}: {e}")
         result = {
-            'title': f'{symbol} - 雪球个股讨论',
+            'title': f'{symbol} - Xueqiu Stock Discussion',
             'link': f'https://xueqiu.com/S/{symbol}',
-            'description': '雪球个股讨论',
+            'description': 'Xueqiu stock discussion',
             'items': [],
         }
 

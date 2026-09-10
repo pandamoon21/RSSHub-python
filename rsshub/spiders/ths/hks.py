@@ -171,9 +171,9 @@ def ctx(category='home'):
                     print(f'[ths/hks] Skipping bad item: {e}')
 
     return {
-        'title': f'同花顺港股-{name}',
+        'title': f'THS Hong Kong Stocks - {name}',
         'link': url,
-        'description': f'同花顺港股频道-{name}',
+        'description': f'THS Hong Kong stock channel - {name}',
         'author': '同花顺',
         'items': items,
     }

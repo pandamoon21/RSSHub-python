@@ -240,9 +240,9 @@ def _fetch(category):
 def ctx(category=''):
     items, channel_name, r_url = _fetch(category)
     return {
-        'title': f'{channel_name} - 新京报',
+        'title': f'{channel_name} - Beijing News',
         'link': r_url,
-        'description': f'新京报「{channel_name}」频道新闻',
+        'description': f'Beijing News \"{channel_name}\" channel news',
         'author': 'hillerliao',
         'items': items,
     }

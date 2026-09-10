@@ -52,9 +52,9 @@ def wiki_title_from_path(path):
 
 def ctx():
     empty_feed = {
-        'title': '一刻财闻 · 全站 RSS',
+        'title': 'Yikecaiwan - Site-wide RSS',
         'link': domain,
-        'description': 'yikecaiwan.com 全站文章（基于 sitemap.xml）',
+        'description': 'yikecaiwan.com site-wide articles (based on sitemap.xml)',
         'author': 'yikecaiwan.com',
         'items': [],
     }
@@ -128,9 +128,9 @@ def ctx():
     all_items = dated_items + wiki_items
 
     return {
-        'title': '一刻财闻 · 全站 RSS',
+        'title': 'Yikecaiwan - Site-wide RSS',
         'link': domain,
-        'description': 'yikecaiwan.com 全站文章（基于 sitemap.xml），含日报、周报及百科文章',
+        'description': 'yikecaiwan.com site-wide articles (based on sitemap.xml), including dailies, weeklies and wiki articles',
         'author': 'yikecaiwan.com',
         'items': all_items,
     }

@@ -446,9 +446,9 @@ def ctx(keyword='', site='', intitle=True, exclude='', when='',
         item.pop('_title_key', None)
 
     return {
-        'title': '%s - Google 新闻' % query,
+        'title': '%s - Google News' % query,
         'link': '%s?%s' % (SEARCH_ENDPOINT, urlencode(params)),
-        'description': 'Google 新闻搜索「%s」，原始 %d 条，排重后 %d 条（策略：%s%s）。'
+        'description': 'Google News search for \"%s\": %d raw items, %d after dedup (strategy: %s%s).'
                        % (query, total, len(final), strategy, extra),
         'author': 'Google News',
         'items': final,

@@ -66,9 +66,9 @@ def ctx(lang='zh-cn'):
     items = [parse_news(news) for news in news_list if news.get('title')]
 
     return {
-        'title': 'Moomoo 市场要闻',
+        'title': 'Moomoo Market News',
         'link': 'https://www.moomoo.com/hans/news/main',
-        'description': 'Moomoo 新闻主频道 - 市场要闻',
+        'description': 'Moomoo main news channel - market news',
         'author': 'moomoo',
         'items': items,
     }

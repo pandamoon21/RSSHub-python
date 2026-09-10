@@ -51,9 +51,9 @@ def ctx(category=''):
             break
         items.extend(map(parse, posts))
     return {
-        'title': f'申请事项进度查询 - {category}  - 中国证监会',
+        'title': f'Application Review Progress - {category} - CSRC',
         'link': f'{domain}/alappl/home1/onlinealog?appMatrCde={category}',
-        'description': f'{category} 申请事项进度查询 - 中国证监会',
+        'description': f'{category} application review progress - CSRC',
         'author': 'hillerliao',
         'items': items
     }

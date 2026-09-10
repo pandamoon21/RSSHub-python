@@ -72,9 +72,9 @@ def ctx(type='macresearch', category=''):
                 break
     suffix = f'?hyid={category}' if category else ''
     return {
-        'title': f'{display} - 东方财富网',
+        'title': f'{display} - Eastmoney',
         'link': f'http://data.eastmoney.com/report/{type}.jshtml{suffix}',
-        'description': f'{display} - 东方财富网',
+        'description': f'{display} - Eastmoney',
         'author': 'hillerliao',
         'items': items
     }

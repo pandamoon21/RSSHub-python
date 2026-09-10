@@ -82,9 +82,9 @@ def ctx():
     if not posts:
         detail = '; '.join(errors) or 'empty response'
         return {
-            'title': '电报 - 财联社',
+            'title': 'Telegraph - CLS',
             'link': 'https://www.cls.cn/telegraph',
-            'description': f'财联社电报 (数据获取失败: {detail})',
+            'description': f'CLS Telegraph (data fetch failed: {detail})',
             'author': 'hillerliao',
             'items': []
         }
@@ -96,9 +96,9 @@ def ctx():
         except Exception as e:
             print(f"[cls/telegraph] Skipping bad item: {e}")
     return {
-        'title': '电报 - 财联社',
+        'title': 'Telegraph - CLS',
         'link': 'https://www.cls.cn/telegraph',
-        'description': '财联社电报',
+        'description': 'CLS Telegraph',
         'author': 'hillerliao',
         'items': items
     }

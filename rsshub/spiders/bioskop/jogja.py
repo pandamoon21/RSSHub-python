@@ -28,7 +28,10 @@ _A2 = _gulung([47, 118, 49, 47, 109, 111, 118, 105, 101, 115, 47])
 _A3 = _gulung([110, 111, 119, 95, 112, 108, 97, 121, 105, 110, 103])
 _A4 = _gulung([117, 112, 99, 111, 109, 105, 110, 103])
 _A5 = _gulung([67, 108, 105, 101, 110, 116, 45, 83, 101, 99, 114, 101, 116])
-_A6 = _gulung([104, 116, 116, 112, 115, 58, 47, 47, 119, 119, 119, 46, 116, 105, 120, 46, 105, 100])
+# Web player host. Note: the www host 404s for movie pages — the app host is
+# the one that serves them. The path only needs the numeric id; the slug
+# segment the site shows is cosmetic and any value resolves.
+_A6 = _gulung([104, 116, 116, 112, 115, 58, 47, 47, 97, 112, 112, 46, 116, 105, 120, 46, 105, 100])
 
 _V = 7  # WIB offset forwarded upstream as tz
 

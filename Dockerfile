@@ -1,30 +1,22 @@
-# nginx-gunicorn-flask
+FROM mcr.microsoft.com/playwright/python:v1.49.1-jammy
 
-FROM ubuntu:latest
-MAINTAINER Hiller Liao <hillerliao@163.com>
+# Set working directory
+WORKDIR /app
 
-ENV DEBIAN_FRONTEND noninteractive
+# Copy application code
+COPY . .
 
-RUN apt-get update
-RUN apt-get install -y python3 python3-pip python3-virtualenv nginx supervisor
+# Install Python dependencies
+# Official image has system dependencies, we just need python deps
+RUN pip install --no-cache-dir -r requirements-full.txt && \
+    playwright install chromium
 
-# Setup flask application
-RUN mkdir -p /app
-COPY . /app
-RUN pip install -r /app/requirements.txt -i https://mirrors.aliyun.com/pypi/simple
-RUN pip install gunicorn
-# RUN pip install git+https://github.com/getsyncr/notion-sdk.git
+# Set production environment variables
+ENV FLASK_CONFIG=production
+ENV FLASK_ENV=production
 
-# Setup nginx 
-RUN rm /etc/nginx/sites-enabled/default
-COPY flask.conf /etc/nginx/sites-available/
-RUN ln -s /etc/nginx/sites-available/flask.conf /etc/nginx/sites-enabled/flask.conf
-RUN echo "daemon off;" >> /etc/nginx/nginx.conf
+# Expose port
+EXPOSE 5000
 
-# Setup supervisord
-RUN mkdir -p /var/log/supervisor
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-COPY gunicorn.conf /etc/supervisor/conf.d/gunicorn.conf
-
-# Start processes
-CMD ["/usr/bin/supervisord"]
+# Start app using PORT environment variable (default 5000) for compatibility with Zeabur/Heroku
+CMD gunicorn -b 0.0.0.0:${PORT:-5000} main:app --timeout 120 --workers 1

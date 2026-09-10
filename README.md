@@ -1,73 +1,117 @@
-# RSSHub
+# RSSHub Python
 
-> 🍰 万物皆可 RSS
+> 🍰 Everything can be RSS
 
-RSSHub 是一个轻量、易于扩展的 RSS 生成器，可以给任何奇奇怪怪的内容生成 RSS 订阅源
+RSSHub Python is a lightweight, extensible RSS generator. It is a Python-based implementation of the [original RSSHub](https://github.com/DIYgod/RSSHub) philosophy: bringing RSS feeds to everything.
 
-本项目是[原RSSHub](https://github.com/DIYgod/RSSHub)的Python实现。
+**Demo**: [https://pyrsshub.vercel.app](https://pyrsshub.vercel.app)
 
-**其实用Python写爬虫要比JS更方便:p**
+---
 
-DEMO地址：https://rsshub.deta.dev
+## ✨ Key Features
 
-## RSS过滤
+- **Versatile Source Support**: Generate RSS from CSV, TSV, TXT, PDF, EPUB, MOBI, and even raw HTML.
+- **Intelligent Extraction**: Built-in readability engine to extract clean content from web pages and formatted documents.
+- **Playwright Powered**: Seamlessly handles dynamic, JavaScript-heavy websites using modern browser automation.
+- **Smart Caching**: Implements Stale-While-Revalidate (SWR) strategies to balance performance and freshness.
+- **Hugging Face Integration**: Turn datasets on Hugging Face into fresh RSS feeds.
+- **Anki Integration**: Sync your due cards as an RSS feed for mobile review.
 
-你可以通过以下查询字符串来过滤RSS的内容：
+---
 
-- include_title: 搜索标题
-- include_description: 搜索描述
-- exclude_title: 排除标题
-- exclude_description: 排除描述
-- limit: 限制条数
+## 🚀 Quick Start
 
-## 贡献 RSS 方法
+Ensure you have [uv](https://github.com/astral-sh/uv) installed.
 
-1. fork这份仓库
-2. 在spiders文件夹下创建新的爬虫目录和脚本，编写爬虫，参考我的[爬虫教程](https://alphardex.github.io/2018/12/15/%E7%BD%91%E7%BB%9C%E7%88%AC%E8%99%AB%E7%B2%BE%E8%A6%81/)
-3. 在blueprints的main.py中添加对应的路由（按照之前路由的格式）
-4. 在templates中的main目录下的feeds.html上写上说明文档，同样可参照格式写
-5. 提pr
-
-## 部署
-
-### 本地测试
-
-首先确保安装了[pipenv](https://github.com/pypa/pipenv)
-
-``` bash
+```bash
 git clone https://github.com/alphardex/RSSHub-python
 cd RSSHub-python
-pipenv install --dev
-pipenv shell
-flask run
+uv sync
+uv run flask run
 ```
 
-### 生产环境
+> **Note**: For full features (Playwright, PDF processing, etc.), use `pip install -r requirements-full.txt` instead of the default `requirements.txt`.
 
-``` bash
-gunicorn main:app -b 0.0.0.0:5000
+---
+
+## 🛠 Advanced Features
+
+### Dynamic Source Discovery (`/randomline`)
+Extract random content blocks from various file formats.
+- Supports: `CSV`, `TSV`, `TXT`, `PDF`, `EPUB`, `MOBI`, and Web URLs.
+- Features: Automatic paragraph joining for PDFs and readability extraction for web pages.
+- Parameters:
+  - `url`: Custom file URL (supports CSV/TXT/PDF/EPUB/MOBI or web pages)
+  - `title_col`: Column index for title (0-based, default: 0)
+  - `delimiter`: Separator type (`tab`, `newline`, `double_newline`, `triple_newline`, etc.)
+  - `min_length`: Minimum title length requirement
+  - `include_context`: Include previous and next lines in description when set to `true`
+
+### Proxy Readability (`/proxy/readability`)
+A dedicated endpoint to extract clean text from any URL, stripping away ads and navigation.
+
+### Google News Search (`/google/news/:keyword`)
+Turn Google News search results into a clean, deduplicated RSS feed.
+- Example: `/google/news/火了|财富密码|流量密码?site=36kr.com&when=7d`
+- Parameters:
+  - `q`: Keywords (also accepted as the path segment); separate multiple terms with `|` or `,`
+  - `site`: Restrict to one or more domains, e.g. `36kr.com,ithome.com`
+  - `intitle`: `1` (default) matches titles only; `0` matches the full text
+  - `exclude`: Terms to exclude
+  - `when`: Time range, e.g. `24h`, `7d`, `1m`
+  - `hl` / `gl` / `ceid`: Language / region / edition (`ceid` is derived from `gl` + `hl` when omitted)
+  - `dedup`: `title` (default) / `title+source` / `guid` / `link` / `none`
+  - `similar`: Fuzzy title dedup threshold (0-1, e.g. `0.9`); disabled by default
+  - `source`: Keep the trailing " - Publisher" in titles (`1`, default) or strip it (`0`)
+  - `sort`: Sort by publish time descending (`1`, default)
+
+> **Why dedup by title instead of `guid`?**
+> A Google News `guid` is a *story cluster* ID: the same article re-crawled from the same
+> publisher gets a **different** guid (in one real request, a single 36Kr article appeared
+> 3 times with 3 distinct guids). And `<link>` is a unique
+> `news.google.com/rss/articles/<CBMi...>` redirect URL, so deduping by link is a no-op.
+> The default strategy normalizes titles (strips the " - Publisher" suffix, ignores
+> punctuation, case and full/half-width differences) and keeps the newest copy.
+
+### Universal Filtering
+Filter any feed using URL parameters:
+- `include_title` / `include_description`: Case-insensitive keyword matching (supports `|` for OR).
+- `exclude_title` / `exclude_description`: Remove unwanted content.
+- `limit`: Control the number of items returned.
+
+---
+
+## ☁️ Deployment
+
+### Docker (Recommended)
+```bash
+docker run -d \
+  --name pyrsshub \
+  -p 5000:5000 \
+  --restart unless-stopped \
+  --shm-size=512mb \
+  hillerliao/pyrsshub:latest
 ```
 
-### 部署到 deta.dev
+### Cloud Platforms
+- **Vercel**: [![Deploy with Vercel](https://vercel.app/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fhillerliao%2Frsshub-python)
+  > **Note**: The project is pre-configured for Vercel Lite Mode via `vercel.json`. It uses `requirements-lite.txt` to avoid the 250MB size limit.
+  > Advanced features like Playwright and PDF parsing are disabled in Lite Mode.
 
-[![Deploy](https://button.deta.dev/1/svg)](https://go.deta.dev/deploy?repo=https://github.com/pandamoon21/rsshub-python)
+- **Zeabur**: Supports both Git integration and pre-built Docker images.
 
-或  
+---
 
-安装 [Deta CLI](https://docs.deta.sh/docs/cli/install/)；  
-在终端运行`deta login`；
-在项目根目录运行`deta new --python pyrsshub`；  
-将 `pyrsshub` 目录下的 `.deta` 文件夹移到根目录；
-运行`deta deploy`；
-获取网址 `https://<micro_name>.deta.dev/`；
-更新`deta update`
+## 🤝 Contributing
 
-### 部署到 Vercel
+We welcome new spiders!
+1. **Spider**: Create a script in `/rsshub/spiders/your_spider/`.
+2. **Route**: Add the endpoint definition in `/rsshub/blueprints/main.py`.
+3. **Docs**: Document your new feed in `/rsshub/templates/main/feeds.html`.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fpandamoon21%2FRSSHub-python)
+---
 
-### Docker 部署
+## 💬 Community
 
-制作镜像文件 `docker build -t pyrsshub:latest .`
-
-创建docker容器 `docker run -dit --name pyrsshub -p 8080:80 pyrsshub:latest`
+- **Discord**: [Join our server](https://discord.gg/4BZBZuyx7p)
+- **Contribution Guide**: Check our [crawler tutorial](https://juejin.cn/post/6953881777756700709) (Chinese).

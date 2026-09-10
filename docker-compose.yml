@@ -1,0 +1,19 @@
+services:
+  rsshub:
+    build: .
+    container_name: pyrsshub
+    ports:
+      - "5000:5000"
+    # Essential for Playwright to avoid crashing in Docker
+    # 512mb is usually sufficient for single-tab browsing and safer for 2GB host
+    shm_size: '512mb'
+    deploy:
+      resources:
+        limits:
+          # Limit memory usage to prevent OOM killing the host (leave room for OS)
+          memory: 1.2G
+    restart: unless-stopped
+    environment:
+      - PORT=5000
+      - FLASK_CONFIG=production
+      - FLASK_ENV=production

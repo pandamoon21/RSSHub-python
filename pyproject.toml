@@ -30,7 +30,13 @@ dependencies = [
     "httpx",
     "tinydb",
     "tokopaedi-async==0.1.2",
-    "bs4 (>=0.0.2,<0.0.3)"
+    "bs4 (>=0.0.2,<0.0.3)",
+    # upstream full-mode extras (playwright/trafilatura backed spiders)
+    "trafilatura>=2.0.0",
+    "playwright>=1.57.0",
+    "EbookLib>=0.17.1",
+    "mobi>=0.3.3",
+    "pymupdf>=1.25.0",
 ]
 
 [project.optional-dependencies]

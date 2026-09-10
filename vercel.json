@@ -14,6 +14,7 @@
     ],
     "env": {
         "FLASK_DEBUG": "0",
-        "FLASK_CONFIG": "production"
+        "FLASK_CONFIG": "production",
+        "PYTHONPATH": "$PYTHONPATH:."
     }
 }

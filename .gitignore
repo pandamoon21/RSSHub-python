@@ -9,15 +9,30 @@ dist/
 *.egg-info/
 .idea
 venv
+.venv
 
 # Others
 .vscode
 .coverage
 htmlcov/
 data-dev.db
+test*
+repro*
+debug*
 
 .env
 #Dockerfile
 # google_analytics.py
 .deta
 .vercel
+
+# Logs
+logs/
+*.log
+tmp*
+*tmp*
+.env*
+
+# AI tooling artifacts
+.codebuddy/
+.zcode/

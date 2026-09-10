@@ -1,3 +1,6 @@
-pyproject.toml
 uv.lock
+pyproject.toml
 poetry.lock
+Pipfile
+Pipfile.lock
+.python-version

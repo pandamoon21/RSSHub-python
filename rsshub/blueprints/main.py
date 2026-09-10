@@ -6,10 +6,12 @@ from rsshub.utils import swr_cache
 bp = Blueprint('main', __name__)
 
 
+@bp.route('/word/<string:category>')
 @bp.route('/')
-def word():
+@cache.cached(timeout=3600)
+def word(category=''):
     from rsshub.spiders.word.word import ctx
-    return render_template('main/word.html', **ctx())
+    return render_template('main/word.html', **ctx(category))
 
 
 @bp.route('/index')
@@ -21,6 +23,11 @@ def index():
 def feeds():
     return render_template('main/feeds.html')
 
+
+
+@bp.route('/status')
+def status():
+    return render_template('main/status.html')
 
 @bp.app_template_global()
 def filter_content(ctx):
@@ -81,6 +88,7 @@ def filter_content(ctx):
     ctx = ctx.copy()
     ctx['items'] = items
     return ctx
+
 
 
 # ---------- feed routes ----------
@@ -294,3 +302,588 @@ def rss_filter():
     from rsshub.spiders.rssfilter.filter import ctx
     feed_url = request.args.get("feed")
     return render_template('main/atom.xml', **filter_content(ctx(feed_url)))
+
+# ---------- upstream feed routes ----------
+
+@bp.route('/cninfo/announcement/<string:stock_id>/<string:category>')
+@bp.route('/cninfo/announcement')
+def cninfo_announcement(stock_id='', category=''):
+    from rsshub.spiders.cninfo.announcement import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(stock_id,category)))
+
+
+@bp.route('/chuansongme/articles/<string:category>')
+@bp.route('/chuansongme/articles')
+def chuansongme_articles(category=''): 
+    from rsshub.spiders.chuansongme.articles import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(category)))
+
+
+@bp.route('/ctolib/topics/<string:category>')
+@bp.route('/ctolib/topics')
+def ctolib_topics(category=''):
+    from rsshub.spiders.ctolib.topics import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(category)))
+
+@bp.route('/emagazine')
+@cache.cached(timeout=3600)
+def emagazine(category=''):
+    from rsshub.spiders.emagazine.magazine import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(category)))
+
+@bp.route('/bbwc/realtime/<string:category>')
+@bp.route('/bbwc/realtime')
+def bbwc_realtime(category=''):
+    from rsshub.spiders.bbwc.realtime import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(category)))
+
+
+@bp.route('/infoq/recommend')
+def infoq_recommend():
+    from rsshub.spiders.infoq.recommend import ctx
+    return render_template('main/atom.xml', **filter_content(ctx()))
+
+
+@bp.route('/infoq/topic/<int:category>')
+def infoq_topic(category=''):
+    from rsshub.spiders.infoq.topic import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(category)))
+
+@bp.route('/readhub/topic/<string:type>/<string:uid>')
+@swr_cache(timeout=600)
+def readhub_topic(type='', uid=''):
+    from rsshub.spiders.readhub.topic import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(type,uid)))    
+
+@bp.route('/infoq/profile/<string:category>')
+def infoq_profile(category=''):
+    from rsshub.spiders.infoq.profile import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(category)))
+
+@bp.route('/infoq/search/<string:category>/<int:type>')
+def infoq_search(category='', type=''):
+    from rsshub.spiders.infoq.search import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(category, type)))
+
+@bp.route('/dxzg/notice')
+def dxzg_notice():
+    from rsshub.spiders.dxzg.notice import ctx
+    return render_template('main/atom.xml', **filter_content(ctx()))
+
+
+@bp.route('/earningsdate/prnewswire')
+def earningsdate_prnewswire():
+    from rsshub.spiders.earningsdate.prnewswire import ctx
+    return render_template('main/atom.xml', **filter_content(ctx()))
+
+@bp.route('/earningsdate/globenewswire')
+def earningsdate_globenewswire():
+    from rsshub.spiders.earningsdate.globenewswire import ctx
+    return render_template('main/atom.xml', **filter_content(ctx()))
+
+@bp.route('/jiemian/newsflash/<string:category>')
+def jiemian_newsflash(category=''):
+    from rsshub.spiders.jiemian.newsflash import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(category)))
+
+@bp.route('/csrc/audit/<string:category>')
+def csrc_audit(category=''):
+    from rsshub.spiders.csrc.audit import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(category)))
+
+@bp.route('/caixin/scroll/<string:category>')
+@swr_cache(timeout=300)  # SWR缓存，降低财新网关请求频率，规避风控403
+def caixin_scroll(category=''):
+    from rsshub.spiders.caixin.scroll import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(category)))
+
+@bp.route('/eastmoney/report/<string:type>/<string:category>')
+@bp.route('/eastmoney/report/<string:type>')
+def eastmoney_report(category='', type=''):
+    from rsshub.spiders.eastmoney.report import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(type, category)))
+
+@bp.route('/eastmoney/kuaixun/<string:category>')
+@bp.route('/eastmoney/kuaixun')
+def eastmoney_kuaixun(category='all'):
+    from rsshub.spiders.eastmoney.kuaixun import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(category)))
+
+@bp.route('/stcn/kuaixun/<string:tag>')
+@bp.route('/stcn/kuaixun')
+@swr_cache(timeout=600)  # 10分钟SWR缓存,快讯接口依赖会话Cookie,降低请求频率防风控
+def stcn_kuaixun(tag=''):
+    from rsshub.spiders.stcn.kuaixun import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(tag)))
+
+@bp.route('/10jqka/realtimenews/<string:category>')
+@bp.route('/10jqka/realtimenews')
+@swr_cache(timeout=300)  # 5分钟SWR缓存,快讯接口,降低请求频率防风控
+def ths_realtimenews(category='news'):
+    from rsshub.spiders.ths.realtimenews import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(category)))
+
+@bp.route('/10jqka/hks/<string:category>')
+@bp.route('/10jqka/hks')
+@swr_cache(timeout=600)  # 10分钟SWR缓存
+def ths_hks(category='home'):
+    from rsshub.spiders.ths.hks import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(category)))
+
+@bp.route('/jin10/category/<string:category>')
+@bp.route('/jin10/important')
+@bp.route('/jin10')
+@swr_cache(timeout=300)  # 5分钟SWR缓存
+def jin10_kuaixun(category='', important=''):
+    from rsshub.spiders.jin10.kuaixun import ctx
+    if request.path.endswith('/important'):
+        important = '1'
+    return render_template('main/atom.xml', **filter_content(ctx(category, important)))
+
+@bp.route('/jinse/lives/<string:category>')
+@bp.route('/jinse/lives')
+@swr_cache(timeout=300)  # 5分钟SWR缓存
+def jinse_lives(category='all'):
+    from rsshub.spiders.jinse.lives import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(category)))
+
+@bp.route('/xuangubao/<string:type>/<string:category>')
+def xuangubao_xuangubao(type='', category=''):
+    from rsshub.spiders.xuangubao.xuangubao import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(type, category)))
+
+@bp.route('/cls/subject/<string:category>')
+def cls_subject(category=''):
+    from rsshub.spiders.cls.subject import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(category)))
+
+@bp.route('/cls/telegraph/')
+def cls_telegraph():
+    from rsshub.spiders.cls.telegraph import ctx
+    return render_template('main/atom.xml', **filter_content(ctx()))
+
+@bp.route('/chaindd/column/<string:category>')
+def chaindd_column(category=''):
+    from rsshub.spiders.chaindd.column import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(category)))
+
+@bp.route('/techcrunch/tag/<string:category>')
+def techcrunch_tag(category=''):
+    from rsshub.spiders.techcrunch.tag import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(category)))
+
+@bp.route('/weiyangx/home')
+def weiyangx_home():
+    from rsshub.spiders.weiyangx.home import ctx
+    return render_template('main/atom.xml', **filter_content(ctx()))
+
+@bp.route('/weiyangx/express/')
+def weiyangx_express():
+    from rsshub.spiders.weiyangx.express import ctx
+    return render_template('main/atom.xml', **filter_content(ctx()))
+
+@bp.route('/weiyangx/tag/<string:category>')
+def weiyangx_tag(category=''):
+    from rsshub.spiders.weiyangx.tag import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(category)))
+
+@bp.route('/jintiankansha/column/<string:category>')
+def jintiankansha_column(category=''):
+    from rsshub.spiders.jintiankansha.column import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(category)))
+
+@bp.route('/interotc/cpgg/<string:category>')
+def interotc_cpgg(category=''):
+    from rsshub.spiders.interotc.cpgg import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(category)))
+
+@bp.route('/benzinga/ratings/<string:category>')
+def benzinga_ratings(category=''):
+    from rsshub.spiders.benzinga.ratings import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(category)))
+
+@bp.route('/chouti/section/<string:category>')
+def chouti_section(category=''):
+    from rsshub.spiders.chouti.section import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(category)))
+
+@bp.route('/chouti/search/<string:category>')
+def chouti_search(category=''):
+    from rsshub.spiders.chouti.search import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(category)))
+
+@bp.route('/chouti/user/<string:category>')
+def chouti_user(category=''):
+    from rsshub.spiders.chouti.user import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(category)))
+
+@bp.route('/zaobao/realtime/<string:category>')
+def zaobao_realtime(category=''):
+    from rsshub.spiders.zaobao.realtime import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(category)))
+
+@bp.route('/mp/tag/<string:mp>/<string:tag>')
+def mp_tag(mp='', tag=''):
+    from rsshub.spiders.mp.tag import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(mp,tag)))
+
+@bp.route('/mp/rtag/<string:c1>/<string:tag>')
+def mp_rtag(c1='', tag=''):
+    from rsshub.spiders.mp.rtag import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(c1, tag)))
+
+@bp.route('/producthunt/search/<string:keyword>/<string:period>')
+@swr_cache(timeout=1800)
+def producthunt_search(keyword='', period=''):
+    from rsshub.spiders.producthunt.search import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(keyword,period)))
+
+@bp.route('/pgyer/<string:category>')
+def pgyer_app(category=''):
+    from rsshub.spiders.pgyer.app import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(category)))
+
+@bp.route('/economist/worldbrief')
+@swr_cache(timeout=3600)
+def economist_wordlbrief(category=''):
+    from rsshub.spiders.economist.worldbrief import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(category)))
+
+@bp.route('/nasdaq/symbol_change')
+@cache.cached(timeout=3600)
+def nasdaq_symbol_change(category=''):
+    from rsshub.spiders.nasdaq.symbol_change import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(category)))
+
+@bp.route('/futu/live/<string:lang>')
+def futu_live(lang=''):
+    from rsshub.spiders.futu.live import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(lang)))
+
+
+@bp.route('/moomoo/news/<string:lang>')
+@bp.route('/moomoo/news')
+@swr_cache(timeout=600)  # 10分钟SWR缓存
+def moomoo_news(lang='zh-cn'):
+    from rsshub.spiders.moomoo.news import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(lang)))    
+
+@bp.route('/baidu/suggest/<string:category>')
+@swr_cache(timeout=1800)  # 30分钟SWR缓存，百度接口海外访问不稳定，避免重复跨境请求
+def baidu_suggest(category=''):
+    from rsshub.spiders.baidu.suggest import ctx
+    return render_template('main/atom.xml', **ctx(category))
+
+@bp.route('/search/baidu/<string:keyword>')
+@swr_cache(timeout=1800)  # 30分钟SWR缓存
+def search_baidu(keyword=''):
+    from rsshub.spiders.search.baidu import ctx
+    return render_template('main/atom.xml', **ctx(keyword))
+
+@bp.route('/search/google/<string:keyword>')
+@swr_cache(timeout=1800)  # 30分钟SWR缓存
+def search_google(keyword=''):
+    from rsshub.spiders.search.google import ctx
+    return render_template('main/atom.xml', **ctx(keyword))
+
+@bp.route('/search/bing/<string:keyword>')
+@swr_cache(timeout=1800)  # 30分钟SWR缓存
+def search_bing(keyword=''):
+    from rsshub.spiders.search.bing import ctx
+    return render_template('main/atom.xml', **ctx(keyword))
+
+
+def _flag(name, default=True):
+    """把 ?xxx=0/false/no 解析成布尔值，默认开关打开。"""
+    value = request.args.get(name)
+    if value is None:
+        return default
+    return str(value).strip().lower() not in ('0', 'false', 'no', 'off', '')
+
+
+@bp.route('/google/news/<path:keyword>')
+@bp.route('/google/news')
+@swr_cache(timeout=1800)  # 30分钟SWR缓存
+def google_news(keyword=''):
+    """Google 新闻搜索订阅源。
+
+    路径或 ?q= 传关键词（多个用 | 或 , 分隔），其余参数：
+    site / intitle / exclude / when / hl / gl / ceid / dedup / similar /
+    source / sort，详见 /feeds 页面说明。
+
+    默认按归一化标题精确排重，只去除标题完全相同的重复条目。
+    注意句式雷同不一定是重复（如不同日期的气象预警是不同事件），
+    需要把标题近似（如转载同稿）也合并时才加 ?similar=0.9。
+    """
+    from rsshub.spiders.google.news import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(
+        keyword=request.args.get('q') or keyword,
+        site=request.args.get('site', ''),
+        intitle=_flag('intitle'),
+        exclude=request.args.get('exclude', ''),
+        when=request.args.get('when', ''),
+        hl=request.args.get('hl', 'zh-CN'),
+        gl=request.args.get('gl', 'CN'),
+        ceid=request.args.get('ceid', ''),
+        dedup=request.args.get('dedup', 'title'),
+        similar=request.args.get('similar', default=0.0, type=float),
+        keep_source=_flag('source'),
+        sort=_flag('sort'),
+    )))
+
+@bp.route('/mp/gh/<string:gh>')
+def mp_gh(gh=''):
+    from rsshub.spiders.mp.gh import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(gh)))
+
+@bp.route('/mp/youwuqiong/<string:author>')
+def mp_youwuqiong(author=''):
+    from rsshub.spiders.mp.youwuqiong import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(author)))
+
+
+@bp.route('/xinhuanet/zuixinbobao')
+def xinhuanet_zuixinbobao():
+    from rsshub.spiders.xinhuanet.zuixinbobao import ctx
+    return render_template('main/atom.xml', **filter_content(ctx()))
+
+
+@bp.route('/xinhuanet/shizhenglianbo')
+def xinhuanet_shizhenglianbo():
+    from rsshub.spiders.xinhuanet.shizhenglianbo import ctx
+    return render_template('main/atom.xml', **filter_content(ctx()))
+
+
+@bp.route('/xinhuanet/yaodianjujiao')
+def xinhuanet_yaodianjujiao():
+    from rsshub.spiders.xinhuanet.yaodianjujiao import ctx
+    return render_template('main/atom.xml', **filter_content(ctx()))
+
+
+@bp.route('/xinhuanet/world')
+def xinhuanet_world():
+    from rsshub.spiders.xinhuanet.world import ctx
+    return render_template('main/atom.xml', **filter_content(ctx()))
+
+
+@bp.route('/yfchuhai/express/')
+def yfchuhai_express():
+    from rsshub.spiders.yfchuhai.express import ctx
+    return render_template('main/atom.xml', **filter_content(ctx()))
+
+@bp.route('/bjnews/<string:category>')
+@swr_cache(timeout=600)  # SWR缓存：上游跨境抓取不稳定，回源抽风时能返回旧数据而非空转
+def bjnews_channel(category=''):
+    from rsshub.spiders.bjnews.channel import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(category)))
+
+@bp.route('/appstore/top/<string:cc>/<string:genreid>')
+def appstore_top(cc='', genreid=''):
+    from rsshub.spiders.appstore.top import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(cc,genreid)))
+
+@bp.route('/netease/comment/<string:category>')
+def netease_comment(category=''):
+    from rsshub.spiders.netease.comment import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(category)))
+
+@bp.route('/aisixiang/search/<string:category>/<string:keywords>')
+def aisixiang_search(category='', keywords=''):
+    from rsshub.spiders.aisixiang.search import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(category, keywords)))
+
+@bp.route('/hnzcy/bidding/<string:type>')
+@cache.cached(timeout=3600)
+def hnzcy_bidding(type=''):
+    from rsshub.spiders.hnzcy.bidding import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(type)))
+
+@bp.route('/sysu/ifcen')
+@cache.cached(timeout=3600)
+def sysu_ifcen(category='', keywords=''):
+    from rsshub.spiders.sysu.ifcen import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(category)))
+
+@bp.route('/nhk/newseasy')
+@cache.cached(timeout=3600)
+def nhk_newseasy(category='', keywords=''):
+    from rsshub.spiders.nhk.newseasy import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(category)))
+
+@bp.route('/nhk/topic/<string:category>')
+@cache.cached(timeout=3600)
+def nhk_topic(category='', keywords=''):
+    from rsshub.spiders.nhk.topic import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(category)))
+
+@bp.route('/tadoku/books/<string:category>')
+@cache.cached(timeout=3600)
+def tadoku_books(category=''):
+    from rsshub.spiders.tadoku.books import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(category)))
+
+@bp.route('/zhihu/explore')
+def zhihu_explore():
+    from rsshub.spiders.zhihu.explore import ctx
+    return render_template('main/atom.xml', **filter_content(ctx()))
+
+@bp.route('/zhihu/question/<string:qid>')
+def zhihu_question(qid):
+    from rsshub.spiders.zhihu.article import ctx_question
+    return render_template('main/atom.xml', **filter_content(ctx_question(qid)))
+
+
+@bp.route('/zhitongcaijing/theme/<string:theme_id>')
+@cache.cached(timeout=3600)
+def zhitongcaijing_theme(theme_id=''):
+    from rsshub.spiders.zhitongcaijing.theme import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(theme_id)))
+
+
+@bp.route('/xueqiu/user/<string:user_id>')
+@swr_cache(timeout=1800)  # 30分钟缓存
+def xueqiu_user(user_id):
+    from rsshub.spiders.xueqiu.user import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(user_id)))
+
+
+@bp.route('/xueqiu/stock/<string:symbol>')
+@bp.route('/xueqiu/stock')
+@swr_cache(timeout=1800)  # 30分钟缓存
+def xueqiu_stock(symbol='TSLA'):
+    from rsshub.spiders.xueqiu.stock import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(symbol)))
+
+
+@bp.route('/qieman/po_adjust/<string:portfolio_id>')
+@swr_cache(timeout=3600)
+def qieman_po_adjust(portfolio_id='SI000108'):
+    from rsshub.spiders.qieman.po_adjust import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(portfolio_id)))
+
+
+@bp.route('/danjuan/departure/<string:strategy_code>')
+@bp.route('/danjuan/departure')
+@swr_cache(timeout=3600)
+def danjuan_departure(strategy_code='TIA08030'):
+    page_no = request.args.get('page_no', default=1, type=int)
+    page_size = request.args.get('page_size', default=20, type=int)
+    from rsshub.spiders.danjuan.departure import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(strategy_code, page_no, page_size)))
+
+
+@bp.route('/scrape/<path:url>')
+@cache.cached(timeout=300)  # 5分钟缓存
+def scrape_html(url):
+    from rsshub.spiders.utils.scraper import ctx
+    from flask import Response
+    
+    try:
+        html_content = ctx(url)
+        return Response(html_content, content_type='text/html; charset=utf-8')
+    except Exception as e:
+        return f"Error: {str(e)}", 500
+
+
+@bp.route('/randomword/<string:category>')
+@bp.route('/randomword')
+@swr_cache(timeout=900)  # 15分钟缓存，使用SWR策略减少403影响
+def randomword(category='sentence'):
+    from rsshub.spiders.randomword.randomword import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(category)))
+
+
+@bp.route('/randomline')
+@swr_cache(timeout=21600)  # 6小时缓存，使用SWR策略
+def random_line():
+    from rsshub.spiders.randomline.randomline import ctx
+    url = request.args.get('url', default='https://raw.githubusercontent.com/HenryLoveMiller/ja/refs/heads/main/raz.csv', type=str)
+    title_col = request.args.get('title_col', default=0, type=int)
+    delimiter = request.args.get('delimiter')
+    min_length = request.args.get('min_length', default=0, type=int)
+    include_context = request.args.get('include_context', default='false', type=str).lower() == 'true'
+    return render_template('main/atom.xml', **filter_content(ctx(url, title_col, delimiter=delimiter, min_length=min_length, include_context=include_context)))
+
+
+@bp.route('/hf_dataset')
+@swr_cache(timeout=1800)  # 30分钟缓存，使用SWR策略
+def hf_dataset():
+    from rsshub.spiders.hf_dataset.hf_dataset import ctx
+    dataset_name = request.args.get('dataset', default='Mxode/I_Wonder_Why-Chinese', type=str)
+    title_col = request.args.get('title_col')
+    content_col = request.args.get('content_col')
+    return render_template('main/atom.xml', **filter_content(ctx(dataset_name, title_col=title_col, content_col=content_col)))
+
+
+@bp.route('/xhunt/trends/<string:group>/<string:hours>/<string:tag>')
+@bp.route('/xhunt/trends/<string:group>/<string:hours>')
+@bp.route('/xhunt/trends/<string:group>')
+@bp.route('/xhunt/trends')
+@swr_cache(timeout=1800)  # 30分钟缓存，使用SWR策略
+def xhunt_trends(group='global', hours='24', tag='ai'):
+    from rsshub.spiders.xhunt.trends import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(group, hours, tag)))
+
+
+@bp.route('/yikecaiwan/journal')
+@swr_cache(timeout=3600)  # 1小时缓存，使用SWR策略（spider会并发抓取全部日记全文，避免每次请求都重复抓）
+def yikecaiwan_journal():
+    from rsshub.spiders.yikecaiwan.journal import ctx
+    return render_template('main/atom.xml', **filter_content(ctx()))
+
+
+@bp.route('/yikecaiwan/weekly')
+@swr_cache(timeout=3600)  # 1小时缓存，使用SWR策略（spider会并发抓取每期周报全文）
+def yikecaiwan_weekly():
+    from rsshub.spiders.yikecaiwan.weekly import ctx
+    return render_template('main/atom.xml', **filter_content(ctx()))
+
+
+@bp.route('/yikecaiwan/sitemap')
+@swr_cache(timeout=3600)  # 1小时缓存，使用SWR策略（spider会并发抓取全部带日期页面的全文）
+def yikecaiwan_sitemap():
+    from rsshub.spiders.yikecaiwan.sitemap import ctx
+    return render_template('main/atom.xml', **filter_content(ctx()))
+
+
+@bp.route('/prudential/knowledge-corner/<string:category>')
+@bp.route('/prudential/knowledge-corner')
+@swr_cache(timeout=3600)  # 1小时缓存，使用SWR策略
+def prudential_knowledge_corner(category='understanding-insurance'):
+    from rsshub.spiders.prudential.knowledge_corner import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(category)))
+
+
+@bp.route('/aia/press-releases')
+@swr_cache(timeout=3600)  # 1小时缓存，使用SWR策略（并发抓取新闻稿正文）
+def aia_press_releases():
+    from rsshub.spiders.aia.press_releases import ctx
+    return render_template('main/atom.xml', **filter_content(ctx()))
+
+
+@bp.route('/chinadaily/latest')
+@bp.route('/chinadaily')
+@bp.route('/chinadaily/<path:section>')
+@swr_cache(timeout=600)  # 10分钟SWR缓存：chinadaily 跨境抓取偶发缓慢，回源抽风时返回旧数据
+def chinadaily_latest(section='china/59b8d010a3108c54ed7dfc23'):
+    from rsshub.spiders.chinadaily.latest import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(section)))
+
+
+@bp.route('/chinadailyglobal/topnews')
+@bp.route('/chinadailyglobal')
+@bp.route('/chinadailyglobal/<path:section>')
+@swr_cache(timeout=600)  # 10分钟SWR缓存：chinadailyglobal 跨境抓取偶发缓慢，回源抽风时返回旧数据
+def chinadailyglobal_topnews(section='e/5c00a33ba310eff30328c087'):
+    from rsshub.spiders.chinadailyglobal.topnews import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(section)))
+
+
+@bp.route('/zhitongcaijing/profile/<string:author_id>')
+@bp.route('/zhitongcaijing/profile')
+@swr_cache(timeout=600)  # 10分钟SWR缓存：智通财经作者专栏JSON接口,跨境偶发缓慢时返回旧数据
+def zhitongcaijing_profile(author_id='85'):
+    limit = request.args.get('limit', default=10, type=int)
+    name = request.args.get('name', default='', type=str)
+    from rsshub.spiders.zhitongcaijing.profile import ctx
+    return render_template('main/atom.xml', **filter_content(ctx(author_id, limit=limit, name=name)))

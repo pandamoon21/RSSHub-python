@@ -4,7 +4,6 @@ from flask_bootstrap import Bootstrap
 from flask_moment import Moment
 from flask_caching import Cache
 
-
 bootstrap = Bootstrap()
 moment = Moment()
 
@@ -19,6 +18,6 @@ if os.environ.get('FLASK_ENV') == 'development':
         pass
 
 cache = Cache(config={
-    "CACHE_TYPE": "SimpleCache",
+    "CACHE_TYPE": "simple",
     "CACHE_DEFAULT_TIMEOUT": 3600,
 })

@@ -153,7 +153,8 @@ def seezn_contents(menuid=''):
 @cache.cached(timeout=1800, query_string=True)
 def genietv_contents(menuid='', orderby=''):
     from rsshub.spiders.genietv.movies2 import ctx
-    return render_template('main/atom.xml', **filter_content(ctx(menuid, orderby)))
+    proxy = request.args.get('proxy')
+    return render_template('main/atom.xml', **filter_content(ctx(menuid, orderby, proxy=proxy)))
 
 
 @bp.route('/klikfilm/newmovies/<string:section>')

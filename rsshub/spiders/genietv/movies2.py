@@ -10,8 +10,10 @@ menu.megatvdnp.co.kr:2443 host no longer answers. Seeezen (seezntv.com) is
 shut down, so detail links point at the Genie TV web player instead.
 
 Note: these hosts are KT-operated and geo-restricted to Korea; requests from
-outside KR will be reset.
+outside KR will be reset. Pass ?proxy=http://host:port (a Korean egress) to
+route the requests through a proxy.
 """
+import os
 import re
 from urllib.parse import unquote
 
@@ -32,7 +34,19 @@ REQUEST_TIMEOUT = 10
 WEB_DETAIL = "https://tv.kt.com/gtv/vod/detail?content_id={content_id}"
 
 
-def get_vod_detail(content_id, menu_id):
+def _proxies(proxy=None):
+    """Build a requests proxies dict from an explicit value or the env.
+
+    Explicit ?proxy= wins; otherwise fall back to GENIETV_PROXY so a Korean
+    egress can be configured once at deploy time instead of per request.
+    """
+    proxy = proxy or os.environ.get('GENIETV_PROXY')
+    if not proxy:
+        return None
+    return {'http': proxy, 'https': proxy}
+
+
+def get_vod_detail(content_id, menu_id, proxies=None):
     """Fetch VOD detail (OMS). Returns the 'data' object, or None on failure."""
     try:
         res = requests.post(
@@ -46,6 +60,7 @@ def get_vod_detail(content_id, menu_id):
                 "menu_id": menu_id,
             },
             headers=headers,
+            proxies=proxies,
             timeout=REQUEST_TIMEOUT,
         )
         res.raise_for_status()
@@ -55,7 +70,7 @@ def get_vod_detail(content_id, menu_id):
         return None
 
 
-def parse(post):
+def parse(post, proxies=None):
     item = {}
     judul = unquote(post.get("title", "")).replace("+", " ")
     imgurl = post.get("image_url", "")
@@ -68,7 +83,7 @@ def parse(post):
     content_id = m.group(1)
 
     web_link = WEB_DETAIL.format(content_id=content_id)
-    detail = get_vod_detail(content_id, post.get("menu_id", ""))
+    detail = get_vod_detail(content_id, post.get("menu_id", ""), proxies=proxies)
 
     size_txt = ""
     runtime_txt = ""
@@ -76,9 +91,8 @@ def parse(post):
     if detail:
         year = detail.get("product_year")
         if detail.get("size"):
-            size_txt = "Size: " + ", ".join(
-                _human_size(x) for x in detail["size"].split("|") if x
-            )
+            sizes = [s for s in (_human_size(x) for x in detail["size"].split("|") if x) if s]
+            size_txt = "Size: " + ", ".join(sizes) if sizes else ""
         if detail.get("runtime"):
             runtime_txt = (
                 detail["runtime"].replace("분", " Minutes").replace("시간", " Hour")
@@ -122,14 +136,18 @@ def _human_size(token):
         n /= 1024
 
 
-def ctx(menuid='', orderby=''):
+def ctx(menuid='', orderby='', proxy=None):
     """
     orderby - regdate, hot, title
 
     menuid
     latest movie (kor + non kor) = 58533
     latest kor movie = 59182
+
+    proxy - optional http(s) proxy URL with a Korean egress, since the KT
+            hosts are geo-restricted. Falls back to $GENIETV_PROXY.
     """
+    proxies = _proxies(proxy)
     try:
         res = requests.get(
             url=f"{BASE_URL}/gtvm_vod_list",
@@ -142,6 +160,7 @@ def ctx(menuid='', orderby=''):
                 "adult_yn": "N",
             },
             headers=headers,
+            proxies=proxies,
             timeout=REQUEST_TIMEOUT,
         )
         res.raise_for_status()
@@ -150,7 +169,7 @@ def ctx(menuid='', orderby=''):
         print(f"[genietv] vod_list failed (menu={menuid}, orderby={orderby}): {e}")
         posts = []
 
-    items = [x for x in map(parse, posts) if x]
+    items = [x for x in (parse(p, proxies=proxies) for p in posts) if x]
 
     return {
         'title': 'GenieTV New Contents',

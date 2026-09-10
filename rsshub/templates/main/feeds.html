@@ -1733,9 +1733,11 @@
         <p class="card-text">Example: <a href="https://rss-panda1.vercel.app/bioskop/jadwal/now" target="_blank">https://rss-panda1.vercel.app/bioskop/jadwal/now</a></p>
         <p class="card-text">Route: <code>bioskop/jadwal/:slot</code></p>
         <p class="card-text">slot: <code>now</code> (sedang tayang), <code>soon</code> (coming soon)</p>
+        <p class="card-text">Catatan: <code>merchant</code> di tiap film itu <b>jaringan</b> bioskop (XXI/CGV/Cinépolis), bukan cabangnya. Untuk daftar cabang pakai feed <code>bioskop/cabang/:city_id</code> di bawah.</p>
         <p class="card-text">Parameter: <code>city_id</code> Optional. Tanpa <code>city_id</code> = semua kota. Contoh: <code>?city_id=967969975509716992</code> (JAKARTA).</p>
         <details>
             <summary class="card-text"><code>city_id</code> lengkap (96 kota) — klik untuk buka</summary>
+
             <ul class="list-group" style="max-height:320px;overflow:auto">
                 <li class="list-group-item"><code>AMBON</code> = 973818519810478080</li>
                 <li class="list-group-item"><code>BALI</code> = 1244607994935726080</li>
@@ -1835,6 +1837,20 @@
                 <li class="list-group-item"><code>YOGYAKARTA</code> = 973818517310672896</li>
             </ul>
         </details>
+    </div>
+</div>
+<br>
+<!--item info end-->
+
+<!--item info start-->
+<div class="card text-left">
+    <div class="card-body">
+        <h4 class="card-title">RSS Bioskop Cinemas</h4>
+        <h6 class="text-muted">RSS Bioskop Cinemas <a href="https://github.com/pandamoon21" target="_blank" class="badge badge-secondary">by pandamoon21</a> <span class="badge badge-warning">Indonesia</span></h6>
+        <p class="card-text">Example: <a href="https://rss-panda1.vercel.app/bioskop/cabang/967969975509716992" target="_blank">https://rss-panda1.vercel.app/bioskop/cabang/967969975509716992</a></p>
+        <p class="card-text">Route: <code>bioskop/cabang/:city_id</code></p>
+        <p class="card-text">Daftar cabang bioskop per kota — nama, alamat, telepon, koordinat, link peta. Pakai <code>city_id</code> yang sama seperti feed jadwal (JAKARTA = 92 cabang, SURABAYA = 28, KLATEN = 2).</p>
+        <p class="card-text">Catatan: endpoint guest nggak nyediain join film &rarr; cabang. Jadwal per-bioskop butuh user id (login akun), jadi feed ini murni katalog cabang.</p>
     </div>
 </div>
 <br>

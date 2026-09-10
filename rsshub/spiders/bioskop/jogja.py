@@ -171,6 +171,64 @@ def _rujak(post, kind):
     }
 
 
+def _cabang(post):
+    """Map one upstream theater object onto the spider item contract."""
+    nama = post.get("name", "")
+    city = (post.get("city") or {}).get("name", "")
+    lat = post.get("latitude")
+    lon = post.get("longitude")
+
+    bits = []
+    if post.get("address"):
+        bits.append("Alamat: " + post["address"].strip())
+    if post.get("contact"):
+        bits.append("Telp: " + post["contact"])
+    if lat and lon:
+        bits.append(f"Koordinat: {lat}, {lon}")
+        bits.append(f"<a href='https://maps.google.com/?q={lat},{lon}'>Peta</a>")
+    if city:
+        bits.append(f"Kota: {city}")
+
+    return {
+        "title": f"{nama}" + (f" — {city}" if city else ""),
+        "description": "<br>".join(bits),
+        "link": f"{_A6}/cinemas/{post.get('id', '')}",
+        "pubDate": time.strftime("%Y-%m-%d %H:%M:%S"),
+    }
+
+
+def ctx_cabang(city_id=''):
+    """Daftar bioskop (cabang) di satu kota.
+
+    Guest-accessible. Tiap cabang bawa nama, alamat, telepon, dan koordinat.
+    Catatan: endpoint guest nggak nyediain join film->cabang — schedule
+    per-bioskop butuh user id, jadi feed ini sengaja cuma katalog cabang.
+    """
+    if not city_id:
+        return {'title': 'Bioskop Cinemas', 'link': _A6 + '/', 'author': 'pandamoon21',
+                'description': 'Butuh city_id (lihat daftar di /feeds)', 'items': []}
+
+    data = _fetch(
+        _gulung([47, 118, 49, 47, 116, 104, 101, 97, 116, 101, 114, 115])
+        + f"?city_id={city_id}"
+    )
+    if isinstance(data, dict):
+        data = data.get("list") or []
+
+    items = [_cabang(x) for x in data]
+    kota = ""
+    if data and data[0].get("city"):
+        kota = data[0]["city"].get("name", "")
+
+    return {
+        'title': f'Bioskop Cinemas' + (f' — {kota}' if kota else ''),
+        'link': _A6 + '/',
+        'description': f'Daftar bioskop di {kota or city_id}',
+        'author': 'pandamoon21',
+        'items': items,
+    }
+
+
 def ctx(slot='now', city_id=''):
     """slot - now | soon
 
@@ -205,4 +263,11 @@ if __name__ == "__main__":
         assert first.get(key), f"missing {key}"
     print(first['title'])
     print(first['link'])
+
+    cab = ctx_cabang('973818513581936640')  # SURABAYA
+    print(f"{len(cab['items'])} bioskop")
+    assert cab['items'], "expected theaters for Surabaya"
+    assert all(x.get('title') for x in cab['items']), "theater missing a title"
+    print(cab['items'][0]['title'])
+    print(cab['items'][0]['description'][:120])
 

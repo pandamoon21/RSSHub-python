@@ -171,6 +171,12 @@ def bioskop_jadwal(slot='now'):
     city_id = request.args.get('city_id', '')
     return render_template('main/atom.xml', **filter_content(ctx(slot, city_id)))
 
+@bp.route('/bioskop/cabang/<string:city_id>')
+@cache.cached(timeout=3600, query_string=True)
+def bioskop_cabang(city_id=''):
+    from rsshub.spiders.bioskop.jogja import ctx_cabang
+    return render_template('main/atom.xml', **filter_content(ctx_cabang(city_id)))
+
 
 @bp.route('/wavve/series/<string:order>')
 @cache.cached(timeout=1800, query_string=True)

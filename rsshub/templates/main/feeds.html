@@ -1732,8 +1732,109 @@
         <h6 class="text-muted">RSS Bioskop Movies <a href="https://github.com/pandamoon21" target="_blank" class="badge badge-secondary">by pandamoon21</a> <span class="badge badge-warning">Indonesia</span></h6>
         <p class="card-text">Example: <a href="https://rss-panda1.vercel.app/bioskop/jadwal/now" target="_blank">https://rss-panda1.vercel.app/bioskop/jadwal/now</a></p>
         <p class="card-text">Route: <code>bioskop/jadwal/:slot</code></p>
-        <p class="card-text">slot: now (sedang tayang), soon / otw (coming soon)</p>
-        <p class="card-text">Parameter: <code>city_id</code> Optional bioskop city id, e.g. <code>?city_id=1</code>.</p>
+        <p class="card-text">slot: <code>now</code> (sedang tayang), <code>soon</code> / <code>otw</code> (coming soon — dua-duanya alias, hasilnya sama)</p>
+        <p class="card-text">Parameter: <code>city_id</code> Optional. Tanpa <code>city_id</code> = semua kota. Contoh: <code>?city_id=967969975509716992</code> (JAKARTA).</p>
+        <details>
+            <summary class="card-text"><code>city_id</code> lengkap (96 kota) — klik untuk buka</summary>
+            <ul class="list-group" style="max-height:320px;overflow:auto">
+                <li class="list-group-item"><code>AMBON</code> = 973818519810478080</li>
+                <li class="list-group-item"><code>BALI</code> = 1244607994935726080</li>
+                <li class="list-group-item"><code>BALIKPAPAN</code> = 973818512004878336</li>
+                <li class="list-group-item"><code>BANDUNG</code> = 973818511275069440</li>
+                <li class="list-group-item"><code>BANJARBARU</code> = 1244607994998640640</li>
+                <li class="list-group-item"><code>BANJARMASIN</code> = 973818519542042624</li>
+                <li class="list-group-item"><code>BATAM</code> = 973818511182794752</li>
+                <li class="list-group-item"><code>BATU</code> = 1244607994918948864</li>
+                <li class="list-group-item"><code>BAUBAU</code> = 1244607995103498240</li>
+                <li class="list-group-item"><code>BEKASI</code> = 973818511732248576</li>
+                <li class="list-group-item"><code>BENGKULU</code> = 973818519986638848</li>
+                <li class="list-group-item"><code>BINJAI</code> = 1244607994952503296</li>
+                <li class="list-group-item"><code>BLITAR</code> = 1178839445454016512</li>
+                <li class="list-group-item"><code>BOGOR</code> = 973818511514144768</li>
+                <li class="list-group-item"><code>BONDOWOSO</code> = 1725288142161850368</li>
+                <li class="list-group-item"><code>BONTANG</code> = 1711879790585196544</li>
+                <li class="list-group-item"><code>CIANJUR</code> = 1651376867036377088</li>
+                <li class="list-group-item"><code>CIKARANG</code> = 1169755844871467008</li>
+                <li class="list-group-item"><code>CILEGON</code> = 973818512071987200</li>
+                <li class="list-group-item"><code>CIREBON</code> = 973818512113930240</li>
+                <li class="list-group-item"><code>DEPOK</code> = 1178839445470793728</li>
+                <li class="list-group-item"><code>DUMAI</code> = 1222305861108510720</li>
+                <li class="list-group-item"><code>DURI</code> = 1244607995048972288</li>
+                <li class="list-group-item"><code>GARUT</code> = 1005975403937935360</li>
+                <li class="list-group-item"><code>GOMBONG</code> = 2061732056034971648</li>
+                <li class="list-group-item"><code>GORONTALO</code> = 973818520355737600</li>
+                <li class="list-group-item"><code>GRESIK</code> = 1090769139527593984</li>
+                <li class="list-group-item"><code>INDRAMAYU</code> = 1897438487989202944</li>
+                <li class="list-group-item"><code>JAKARTA</code> = 967969975509716992</li>
+                <li class="list-group-item"><code>JAMBI</code> = 973818516421480448</li>
+                <li class="list-group-item"><code>JAYAPURA</code> = 973818520292823040</li>
+                <li class="list-group-item"><code>JEMBER</code> = 1111417698853597184</li>
+                <li class="list-group-item"><code>KARAWANG</code> = 973818520678699008</li>
+                <li class="list-group-item"><code>KEBUMEN</code> = 2061732056034971651</li>
+                <li class="list-group-item"><code>KEDIRI</code> = 1129169668045549568</li>
+                <li class="list-group-item"><code>KENDARI</code> = 1244607994969280512</li>
+                <li class="list-group-item"><code>KETAPANG</code> = 1244607994981863424</li>
+                <li class="list-group-item"><code>KISARAN</code> = 1055594867410874368</li>
+                <li class="list-group-item"><code>KLATEN</code> = 1867676382226558976</li>
+                <li class="list-group-item"><code>KUALA KAPUAS</code> = 1722030173747949568</li>
+                <li class="list-group-item"><code>KUPANG</code> = 973818520850665472</li>
+                <li class="list-group-item"><code>LABUAN BAJO</code> = 2061732056034971652</li>
+                <li class="list-group-item"><code>LAMPUNG</code> = 973818516572475392</li>
+                <li class="list-group-item"><code>LUBUKLINGGAU</code> = 1244607995032195072</li>
+                <li class="list-group-item"><code>MADIUN</code> = 1178839445361741824</li>
+                <li class="list-group-item"><code>MAGELANG</code> = 1999156743963230208</li>
+                <li class="list-group-item"><code>MAKASSAR</code> = 973818514898948096</li>
+                <li class="list-group-item"><code>MALANG</code> = 973818515335155712</li>
+                <li class="list-group-item"><code>MAMUJU</code> = 1244607995065749504</li>
+                <li class="list-group-item"><code>MANADO</code> = 973818515440013312</li>
+                <li class="list-group-item"><code>MANOKWARI</code> = 1443370010952085504</li>
+                <li class="list-group-item"><code>MATARAM</code> = 973818520519315456</li>
+                <li class="list-group-item"><code>MEDAN</code> = 973818515087691776</li>
+                <li class="list-group-item"><code>MOJOKERTO</code> = 1178839445403684864</li>
+                <li class="list-group-item"><code>NGANJUK</code> = 2061732056034971649</li>
+                <li class="list-group-item"><code>PADANG</code> = 973818520594812928</li>
+                <li class="list-group-item"><code>PALANGKARAYA</code> = 973818520158605312</li>
+                <li class="list-group-item"><code>PALEMBANG</code> = 973818515746197504</li>
+                <li class="list-group-item"><code>PALU</code> = 973818520410263552</li>
+                <li class="list-group-item"><code>PANGKAL PINANG</code> = 1197682360502464512</li>
+                <li class="list-group-item"><code>PASURUAN</code> = 2061732056034971650</li>
+                <li class="list-group-item"><code>PEKALONGAN</code> = 1070830258023837696</li>
+                <li class="list-group-item"><code>PEKANBARU</code> = 973818519131000832</li>
+                <li class="list-group-item"><code>PEMALANG</code> = 2061732056030777348</li>
+                <li class="list-group-item"><code>PEMATANG SIANTAR</code> = 1244607995137052672</li>
+                <li class="list-group-item"><code>PONOROGO</code> = 1244607995116081152</li>
+                <li class="list-group-item"><code>PONTIANAK</code> = 973818517893681152</li>
+                <li class="list-group-item"><code>PRABUMULIH</code> = 1244607995015417856</li>
+                <li class="list-group-item"><code>PROBOLINGGO</code> = 1178839445420462080</li>
+                <li class="list-group-item"><code>PURWAKARTA</code> = 1178839445500153856</li>
+                <li class="list-group-item"><code>PURWOKERTO</code> = 1178839445437239296</li>
+                <li class="list-group-item"><code>RANTAU PRAPAT</code> = 1103067679159234560</li>
+                <li class="list-group-item"><code>ROKAN HILIR</code> = 1584791871496925184</li>
+                <li class="list-group-item"><code>SALATIGA</code> = 2061732056030777347</li>
+                <li class="list-group-item"><code>SAMARINDA</code> = 973818514064281600</li>
+                <li class="list-group-item"><code>SAMPIT</code> = 1244607994877005824</li>
+                <li class="list-group-item"><code>SEMARANG</code> = 973818514206887936</li>
+                <li class="list-group-item"><code>SERANG</code> = 1244607995082526720</li>
+                <li class="list-group-item"><code>SIDOARJO</code> = 987103552646156288</li>
+                <li class="list-group-item"><code>SINGKAWANG</code> = 973818520464789504</li>
+                <li class="list-group-item"><code>SOLO</code> = 1072645973232070656</li>
+                <li class="list-group-item"><code>SORONG</code> = 1235714215080112128</li>
+                <li class="list-group-item"><code>SUBANG</code> = 2061732056030777346</li>
+                <li class="list-group-item"><code>SUKABUMI</code> = 2061732056030777344</li>
+                <li class="list-group-item"><code>SUMEDANG</code> = 973818520808722432</li>
+                <li class="list-group-item"><code>SURABAYA</code> = 973818513581936640</li>
+                <li class="list-group-item"><code>TANGERANG</code> = 973818514345299968</li>
+                <li class="list-group-item"><code>TANJUNG PINANG</code> = 973818520758390784</li>
+                <li class="list-group-item"><code>TARAKAN</code> = 1605700896530903040</li>
+                <li class="list-group-item"><code>TASIKMALAYA</code> = 973818520234102784</li>
+                <li class="list-group-item"><code>TEGAL</code> = 1178839445546291200</li>
+                <li class="list-group-item"><code>TERNATE</code> = 996542011358056448</li>
+                <li class="list-group-item"><code>TIMIKA</code> = 1851329662932758528</li>
+                <li class="list-group-item"><code>TUBAN</code> = 2001325042977292288</li>
+                <li class="list-group-item"><code>UNGARAN</code> = 2061732056030777345</li>
+                <li class="list-group-item"><code>YOGYAKARTA</code> = 973818517310672896</li>
+            </ul>
+        </details>
     </div>
 </div>
 <br>

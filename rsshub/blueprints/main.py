@@ -163,6 +163,14 @@ def klikfilm_newmovies(section=''):
     from rsshub.spiders.klikfilm.newmovies import ctx
     return render_template('main/atom.xml', **filter_content(ctx(section)))
 
+@bp.route('/bioskop/jadwal/<string:slot>')
+@bp.route('/bioskop/jadwal')
+@cache.cached(timeout=1800, query_string=True)
+def bioskop_jadwal(slot='now'):
+    from rsshub.spiders.bioskop.jogja import ctx
+    city_id = request.args.get('city_id', '')
+    return render_template('main/atom.xml', **filter_content(ctx(slot, city_id)))
+
 
 @bp.route('/wavve/series/<string:order>')
 @cache.cached(timeout=1800, query_string=True)

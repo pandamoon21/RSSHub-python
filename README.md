@@ -95,6 +95,83 @@ Some spiders need credentials or a proxy for upstreams that are geo-restricted o
 > own. If you see frequent 503s on those three routes, self-hosting with a residential or
 > dedicated egress is more reliable.
 
+### Facebook (`/facebook/*`)
+
+Five routes, all requiring `FACEBOOK_COOKIE` (see below). Paste any URL straight into your
+reader, or try it in a browser:
+
+| Route | What it returns | Example |
+|---|---|---|
+| `/facebook/page/:id` | Posts from a Page | `/facebook/page/NASA` |
+| `/facebook/page/:id` | Posts from a **personal profile** (username may contain dots) | `/facebook/page/<username>` |
+| `/facebook/group/:id` | A group's posts, chronologically | `/facebook/group/613870175328566` |
+| `/facebook/group/:id/user/:user_id` | One member's posts inside a group | `/facebook/group/<group_id>/user/<user_id>` |
+| `/facebook/marketplace/:query` | Marketplace listings matching a search | `/facebook/marketplace/iphone` |
+| `/facebook/marketplace/seller/:seller_id` | A single seller's listings | `/facebook/marketplace/seller/<seller_id>` |
+
+Where the IDs come from — each is the number already in the URL you'd copy from Facebook:
+
+```
+facebook.com/NASA                                 -> /facebook/page/NASA
+facebook.com/<profile.username>                   -> /facebook/page/<profile.username>
+facebook.com/groups/613870175328566               -> /facebook/group/613870175328566
+facebook.com/groups/<group_id>/user/<user_id>     -> /facebook/group/<group_id>/user/<user_id>
+facebook.com/marketplace/profile/<seller_id>/     -> /facebook/marketplace/seller/<seller_id>
+```
+
+A profile username may contain dots — that is a supported form, not a path separator:
+`facebook.com/first.last.12345` becomes `/facebook/page/first.last.12345`. Usernames are
+resolved to a numeric ID automatically; pages work the same way.
+
+Marketplace accepts two extra query parameters, matching Facebook's own filters:
+
+```bash
+# Only listings in a city, posted within the last day
+/facebook/marketplace/ssd?location=yogyakartacity&days=1
+
+# Any city in your account's own region, no recency filter
+/facebook/marketplace/ssd
+```
+
+- `location` — Marketplace city slug, lowercase and without spaces (`yogyakartacity`,
+  `jakartaselatan`). Without it, results are scoped to your account's region.
+- `days` — only listings posted within this many days.
+- `limit` — how many items, default 21, maximum 100.
+
+All five routes also honour the [universal filters](#universal-filtering)
+
+```bash
+# Only posts mentioning "ssd", newest first, capped at 10
+/facebook/marketplace/ssd?include_title=ssd&limit=10
+```
+
+> **Replace the example IDs with your own.** The paths above use real, public Facebook
+> accounts so you can click them. For `:id` and `:user_id`, copy the number straight out
+> of the Facebook URL you are looking at — a profile username like `jane.doe.12345` must
+> be a username that exists, or the feed will be empty (not an error: Facebook reports no
+> posts rather than "user not found").
+
+**Failure modes.** These routes return honest status codes rather than a traceback:
+
+- **404** — the page, group, profile or seller does not exist.
+- **503** — retryable: `FACEBOOK_COOKIE` missing/expired, `curl_cffi` not installed, or
+  Facebook rate-limiting your host. The body names which one.
+
+Some notes on reliability:
+
+- **Profiles must be public.** Posts behind a login wall need a cookie that can already
+  see them. Meta has no public API for another user's timeline, so a private profile
+  simply returns nothing.
+- **Group access follows the account.** A private group returns only what the cookie's
+  account is allowed to read.
+- **Marketplace is region-scoped** to the account's own Marketplace unless you pass
+  `location`.
+- **Marketplace has no stable API.** Listings are read from JSON embedded in the search
+  page, so a Facebook redesign can break it; the search route also filters out Facebook's
+  placeholder listings, which is why an unrelated query returns an empty feed.
+- **Host IP matters.** Shared datacenter IPs (including Vercel's) are rate-limited
+  aggressively. See the note below if you see frequent 503s.
+
 #### Setting `FACEBOOK_COOKIE`
 
 The value is **plain text**, not JSON and not wrapped in anything — just the `name=value`

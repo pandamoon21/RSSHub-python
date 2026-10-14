@@ -1912,8 +1912,9 @@
         <h4 class="card-title">Facebook Page / Profile</h4>
         <h6 class="text-muted">Facebook Page / Profile <a href="https://github.com/DIYgod/RSSHub" target="_blank" class="badge badge-secondary">ported from RSSHub</a> <span class="badge badge-warning">anti-crawler</span></h6>
         <p class="card-text">Example：<a href="https://rss-panda1.vercel.app/facebook/page/NASA" target="_blank">https://rss-panda1.vercel.app/facebook/page/NASA</a></p>
+        <p class="card-text">Example (personal profile)：<a href="https://rss-panda1.vercel.app/facebook/page/&lt;username&gt;" target="_blank">https://rss-panda1.vercel.app/facebook/page/&lt;username&gt;</a></p>
         <p class="card-text">Route：<code>/facebook/page/:id</code></p>
-        <p class="card-text">Parameter: <code>id</code> Page or profile username, or numeric ID. Works for pages and <strong>public personal profiles</strong> (e.g. <code>/facebook/page/zuck</code>).</p>
+        <p class="card-text">Parameter: <code>id</code> Page ID, page username, or profile username, or numeric ID. Works for pages and <strong>public personal profiles</strong>, including usernames with dots (e.g. <code>first.last.12345</code>).</p>
         <p class="card-text">Parameter: <code>limit</code> Optional number of posts, defaults to 21 (maximum 100).</p>
         <p class="card-text"><span class="badge badge-warning">Login required</span> <code>FACEBOOK_COOKIE</code> is required (only the <code>c_user</code> and <code>xs</code> cookies are needed). Facebook rejects plain HTTP clients on TLS fingerprint and serves a login wall without a session. A missing or expired cookie returns HTTP 503; an unknown page returns 404.</p>
         <p class="card-text">The value is plain text, <strong>not</strong> JSON. Convert a browser export with <code>python fb_cookie_from_export.py fb_cookies.json</code> — see the README for details.</p>
@@ -1962,9 +1963,9 @@
     <div class="card-body">
         <h4 class="card-title">Facebook Marketplace Seller</h4>
         <h6 class="text-muted">Facebook Marketplace Seller <span class="badge badge-warning">login required</span></h6>
-        <p class="card-text">Example：<a href="https://rss-panda1.vercel.app/facebook/marketplace/seller/100072517471885" target="_blank">https://rss-panda1.vercel.app/facebook/marketplace/seller/100072517471885</a></p>
+        <p class="card-text">Example：<a href="https://rss-panda1.vercel.app/facebook/marketplace/seller/&lt;seller_id&gt;" target="_blank">https://rss-panda1.vercel.app/facebook/marketplace/seller/&lt;seller_id&gt;</a></p>
         <p class="card-text">Route：<code>/facebook/marketplace/seller/:seller_id</code></p>
-        <p class="card-text">Parameter: <code>seller_id</code> Numeric seller ID from a seller URL such as <code>facebook.com/marketplace/profile/<strong>100072517471885</strong>/</code>.</p>
+        <p class="card-text">Parameter: <code>seller_id</code> Numeric seller ID from a seller URL such as <code>facebook.com/marketplace/profile/<strong>&lt;seller_id&gt;</strong>/</code>.</p>
         <p class="card-text">Parameter: <code>limit</code> Optional number of listings, defaults to 21 (maximum 100).</p>
         <p class="card-text">Lists a single seller's active listings. <code>FACEBOOK_COOKIE</code> is required.</p>
     </div>
@@ -1977,10 +1978,10 @@
     <div class="card-body">
         <h4 class="card-title">Facebook Group Member Posts</h4>
         <h6 class="text-muted">Facebook Group Member Posts <span class="badge badge-warning">login required</span></h6>
-        <p class="card-text">Example：<a href="https://rss-panda1.vercel.app/facebook/group/586220791393074/user/100090130956973" target="_blank">https://rss-panda1.vercel.app/facebook/group/586220791393074/user/100090130956973</a></p>
+        <p class="card-text">Example：<a href="https://rss-panda1.vercel.app/facebook/group/613870175328566/user/&lt;user_id&gt;" target="_blank">https://rss-panda1.vercel.app/facebook/group/613870175328566/user/&lt;user_id&gt;</a></p>
         <p class="card-text">Route：<code>/facebook/group/:id/user/:user_id</code></p>
         <p class="card-text">Parameter: <code>id</code> Group ID or group username.</p>
-        <p class="card-text">Parameter: <code>user_id</code> Numeric member ID from a URL such as <code>facebook.com/groups/586220791393074/user/<strong>100090130956973</strong>/</code>.</p>
+        <p class="card-text">Parameter: <code>user_id</code> Numeric member ID from a URL such as <code>facebook.com/groups/613870175328566/user/<strong>&lt;user_id&gt;</strong>/</code>.</p>
         <p class="card-text">Parameter: <code>limit</code> Optional number of posts, defaults to 21 (maximum 100).</p>
         <p class="card-text">All posts by one member inside a group. <code>FACEBOOK_COOKIE</code> is required, and the account must already be able to see the group.</p>
     </div>

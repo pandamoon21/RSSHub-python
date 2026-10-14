@@ -788,5 +788,87 @@ class NewRouteTests(FacebookTestBase):
         self.assertIn('/marketplace/yogyakartacity/search', session.get_calls[0][0])
 
 
+class UrlFormTests(FacebookTestBase):
+    """Facebook URLs are pasted straight from the browser, so accept both forms."""
+
+    def test_trailing_slash_accepted_on_every_route(self):
+        adapter = self.app.url_map.bind('localhost')
+        pairs = [
+            ('/facebook/page/NASA', 'main.facebook_page'),
+            ('/facebook/page/NASA/', 'main.facebook_page'),
+            ('/facebook/group/123', 'main.facebook_group'),
+            ('/facebook/group/123/', 'main.facebook_group'),
+            ('/facebook/group/1/user/2', 'main.facebook_group_user'),
+            ('/facebook/group/1/user/2/', 'main.facebook_group_user'),
+            ('/facebook/marketplace/iphone', 'main.facebook_marketplace'),
+            ('/facebook/marketplace/iphone/', 'main.facebook_marketplace'),
+            ('/facebook/marketplace/seller/5', 'main.facebook_marketplace_seller'),
+            ('/facebook/marketplace/seller/5/', 'main.facebook_marketplace_seller'),
+        ]
+        for url, endpoint in pairs:
+            with self.subTest(url=url):
+                self.assertEqual(adapter.match(url)[0], endpoint)
+
+    def test_seller_route_still_wins_over_query_catch_all(self):
+        """Adding the trailing-slash rule must not let <query> swallow 'seller'."""
+        adapter = self.app.url_map.bind('localhost')
+        self.assertEqual(adapter.match('/facebook/marketplace/seller/5')[0],
+                         'main.facebook_marketplace_seller')
+        self.assertEqual(adapter.match('/facebook/marketplace/seller/5/')[0],
+                         'main.facebook_marketplace_seller')
+
+
+class GroupIdentifierTests(FacebookTestBase):
+    """A group may be addressed by numeric id or by its username slug."""
+
+    def test_numeric_group_id_skips_lookup(self):
+        """Callers pass digits straight through; resolve_group_id is for slugs only."""
+        # The numeric fast-path lives in the callers, so assert on that contract.
+        for module_call in (u.fetch_group_member_posts,):
+            with mock.patch.object(u, '_get_session') as gs, \
+                 mock.patch.object(u, 'get_cookie', return_value='c_user=1; xs=2'):
+                session = mock.MagicMock()
+                session.get.return_value = FakeResponse('<html>"LSD",[],{"token":"t"}</html>')
+                gs.return_value = session
+                module_call('454412923988558', '100090130956973', limit=1)
+            # The only request should be the member page itself, i.e. no /about lookup.
+            urls = [c.args[0] for c in session.get.call_args_list]
+            self.assertTrue(all('/about' not in url for url in urls), urls)
+
+    def test_resolve_group_id_reads_groupid_from_about_page(self):
+        session = mock.MagicMock()
+        session.get.return_value = FakeResponse('<html>"groupID":"586220791393074"</html>')
+        with mock.patch.object(u, '_get_session', return_value=session), \
+             mock.patch.object(u, 'get_cookie', return_value='c_user=1; xs=2'):
+            self.assertEqual(u.resolve_group_id('nasrunbth'), '586220791393074')
+        self.assertIn('/groups/nasrunbth/about', session.get.call_args.args[0])
+
+    def test_unknown_group_slug_raises_not_found(self):
+        session = mock.MagicMock()
+        session.get.return_value = FakeResponse('<html>no groupID here</html>')
+        with mock.patch.object(u, '_get_session', return_value=session), \
+             mock.patch.object(u, 'get_cookie', return_value='c_user=1; xs=2'):
+            with self.assertRaises(u.FacebookNotFound):
+                u.resolve_group_id('this-group-does-not-exist-99887')
+
+    def test_group_member_fetch_resolves_a_slug(self):
+        """A slug must be resolved before the member URL is built."""
+        session = mock.MagicMock()
+        # First call = the /about lookup, second = the member page.
+        session.get.side_effect = [
+            FakeResponse('<html>"groupID":"586220791393074"</html>'),
+            FakeResponse('<html>{"__typename":"Story","id":"x","url":"https://f/p/1",'
+                         '"creation_time":1700000000,"actors":[{"name":"A"}],'
+                         '"message":{"text":"hi"},"attachments":[]}</html>'),
+        ]
+        with mock.patch.object(u, '_get_session', return_value=session), \
+             mock.patch.object(u, 'get_cookie', return_value='c_user=1; xs=2'):
+            stories, _ = u.fetch_group_member_posts('nasrunbth', '100090130956973', limit=5)
+        self.assertEqual(len(stories), 1)
+        member_urls = [c.args[0] for c in session.get.call_args_list if '/user/' in c.args[0]]
+        self.assertTrue(member_urls, 'member page should have been requested')
+        self.assertIn('/groups/586220791393074/user/', member_urls[0])
+
+
 if __name__ == '__main__':
     unittest.main()

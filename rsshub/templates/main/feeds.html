@@ -1929,8 +1929,9 @@
         <h4 class="card-title">Facebook Group</h4>
         <h6 class="text-muted">Facebook Group <a href="https://github.com/DIYgod/RSSHub" target="_blank" class="badge badge-secondary">ported from RSSHub</a> <span class="badge badge-warning">anti-crawler</span></h6>
         <p class="card-text">Example：<a href="https://rss-panda1.vercel.app/facebook/group/613870175328566" target="_blank">https://rss-panda1.vercel.app/facebook/group/613870175328566</a></p>
+        <p class="card-text">Example (group username)：<a href="https://rss-panda1.vercel.app/facebook/group/groupusername" target="_blank">https://rss-panda1.vercel.app/facebook/group/groupusername</a></p>
         <p class="card-text">Route：<code>/facebook/group/:id</code></p>
-        <p class="card-text">Parameter: <code>id</code> Group ID or group username. Posts are returned in chronological order.</p>
+        <p class="card-text">Parameter: <code>id</code> Group ID or group username, e.g. <code>613870175328566</code> or <code>groupusername</code>. Either form works, with or without a trailing slash. Posts are returned in chronological order.</p>
         <p class="card-text">Parameter: <code>limit</code> Optional number of posts, defaults to 21 (maximum 100).</p>
         <p class="card-text"><span class="badge badge-warning">Login required</span> <code>FACEBOOK_COOKIE</code> is required. Private groups will not work without a session that can already see them.</p>
     </div>

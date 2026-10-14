@@ -115,9 +115,15 @@ Where the IDs come from — each is the number already in the URL you'd copy fro
 facebook.com/NASA                                 -> /facebook/page/NASA
 facebook.com/<profile.username>                   -> /facebook/page/<profile.username>
 facebook.com/groups/613870175328566               -> /facebook/group/613870175328566
+facebook.com/groups/<group_username>              -> /facebook/group/<group_username>
 facebook.com/groups/<group_id>/user/<user_id>     -> /facebook/group/<group_id>/user/<user_id>
 facebook.com/marketplace/profile/<seller_id>/     -> /facebook/marketplace/seller/<seller_id>
 ```
+
+Groups can be addressed either way — the numeric ID (`/facebook/group/613870175328566`) or the
+username from the URL (`/facebook/group/groupusername`), which is resolved to an ID
+automatically. A trailing slash is accepted too, so a URL pasted straight from the browser
+works: `/facebook/group/613870175328566/` is the same as without it.
 
 A profile username may contain dots — that is a supported form, not a path separator:
 `facebook.com/first.last.12345` becomes `/facebook/page/first.last.12345`. Usernames are

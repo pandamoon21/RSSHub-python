@@ -328,7 +328,10 @@ def _facebook_feed(build_ctx, **params):
         return Response(f'Facebook unavailable. {e}', status=503, mimetype='text/plain')
 
 
+# Facebook URLs always end in "/", so accept a trailing slash on every route below.
+# Copy-pasting a URL straight from the browser must not 404.
 @bp.route('/facebook/page/<string:id>')
+@bp.route('/facebook/page/<string:id>/')
 @swr_cache(timeout=1800)  # Facebook rate-limits hard; serve stale rather than fail on a blip
 def facebook_page(id=''):
     from rsshub.spiders.facebook.page import ctx
@@ -336,6 +339,7 @@ def facebook_page(id=''):
 
 
 @bp.route('/facebook/group/<string:id>')
+@bp.route('/facebook/group/<string:id>/')
 @swr_cache(timeout=1800)  # Facebook rate-limits hard; serve stale rather than fail on a blip
 def facebook_group(id=''):
     from rsshub.spiders.facebook.group import ctx
@@ -343,6 +347,7 @@ def facebook_group(id=''):
 
 
 @bp.route('/facebook/marketplace/<string:query>')
+@bp.route('/facebook/marketplace/<string:query>/')
 @swr_cache(timeout=1800)  # Marketplace is login-walled and slow; serve stale on upstream failure
 def facebook_marketplace(query=''):
     from rsshub.spiders.facebook.marketplace import ctx
@@ -352,6 +357,7 @@ def facebook_marketplace(query=''):
 
 
 @bp.route('/facebook/marketplace/seller/<string:seller_id>')
+@bp.route('/facebook/marketplace/seller/<string:seller_id>/')
 @swr_cache(timeout=1800)
 def facebook_marketplace_seller(seller_id=''):
     from rsshub.spiders.facebook.seller import ctx
@@ -359,6 +365,7 @@ def facebook_marketplace_seller(seller_id=''):
 
 
 @bp.route('/facebook/group/<string:id>/user/<string:user_id>')
+@bp.route('/facebook/group/<string:id>/user/<string:user_id>/')
 @swr_cache(timeout=1800)  # Facebook rate-limits hard; serve stale rather than fail on a blip
 def facebook_group_user(id='', user_id=''):
     from rsshub.spiders.facebook.groupmember import ctx

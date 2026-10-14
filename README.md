@@ -95,6 +95,60 @@ Some spiders need credentials or a proxy for upstreams that are geo-restricted o
 > own. If you see frequent 503s on those three routes, self-hosting with a residential or
 > dedicated egress is more reliable.
 
+#### Setting `FACEBOOK_COOKIE`
+
+The value is **plain text**, not JSON and not wrapped in anything — just the `name=value`
+pairs joined by `"; "`. The browser extension export (`fb_cookies.json`) is a JSON array
+with extra metadata fields and **will not work** if pasted as-is: Facebook then receives
+563 characters of JSON as a single opaque cookie header and reads no `c_user` at all.
+
+Use the bundled helper to convert an export:
+
+```bash
+# From a JSON export (EditThisCookie, Cookie-Editor, devtools)
+python fb_cookie_from_export.py fb_cookies.json
+
+# From a Netscape cookies.txt (curl / yt-dlp format)
+python fb_cookie_from_export.py cookies.txt
+
+# Value only, for scripting
+python fb_cookie_from_export.py fb_cookies.json --quiet
+
+# Or pipe it in
+cat fb_cookies.json | python fb_cookie_from_export.py -
+```
+
+It prints the value on stdout and a summary on stderr:
+
+```
+# found 9 cookie(s): ps_l, datr, fr, xs, c_user, presence, ps_n, sb, wd
+# using 2: c_user, xs (123 chars)
+# paste the line below as the FACEBOOK_COOKIE value, without quotes:
+c_user=100001712146980; xs=34%3A7k8d60i44wKj3g%3A2%3A1780...%3AAczkd6dJmKIfdPXpJhuTSZOqJD...
+```
+
+Paste that line, **without quotes**, as the value of `FACEBOOK_COOKIE`:
+
+```
+FACEBOOK_COOKIE=c_user=100001712146980; xs=34%3A7k8d60i44wKj3g%3A2%3A1780...
+```
+
+Only `c_user` and `xs` are used by default — those are what Facebook authenticates with.
+(`--all` keeps every cookie if you need it.) If the helper reports a missing `xs`, your
+export omitted HttpOnly cookies: `xs` is HttpOnly, so enable that option in your cookie
+extension before exporting.
+
+On Vercel, set it under **Project → Settings → Environment Variables** and then
+**Redeploy** — an existing deployment does not pick up a new variable. The value must go
+in the environment variable field, never in `vercel.json`, which is committed to the repo.
+
+> ⚠️ The value is a live login credential for that Facebook account. Anyone who has it can
+> act as that account. Don't commit it, don't paste it into issues, and re-export (which
+> invalidates the old `xs`) if it leaks.
+
+The helper script needs no dependencies and makes no network request — it only reformats
+the file you give it.
+
 ---
 
 ## ☁️ Deployment

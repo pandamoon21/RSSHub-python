@@ -1916,6 +1916,7 @@
         <p class="card-text">Parameter: <code>id</code> Page or profile username, or numeric ID. Works for pages and <strong>public personal profiles</strong> (e.g. <code>/facebook/page/zuck</code>).</p>
         <p class="card-text">Parameter: <code>limit</code> Optional number of posts, defaults to 21 (maximum 100).</p>
         <p class="card-text"><span class="badge badge-warning">Login required</span> <code>FACEBOOK_COOKIE</code> is required (only the <code>c_user</code> and <code>xs</code> cookies are needed). Facebook rejects plain HTTP clients on TLS fingerprint and serves a login wall without a session. A missing or expired cookie returns HTTP 503; an unknown page returns 404.</p>
+        <p class="card-text">The value is plain text, <strong>not</strong> JSON. Convert a browser export with <code>python fb_cookie_from_export.py fb_cookies.json</code> — see the README for details.</p>
     </div>
 </div>
 <br>

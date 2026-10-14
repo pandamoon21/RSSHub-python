@@ -552,5 +552,76 @@ class RouteTests(FacebookTestBase):
         self.assertEqual(resp.status_code, 404)
 
 
+class CookieExportScriptTests(unittest.TestCase):
+    """The helper that turns a browser cookie export into FACEBOOK_COOKIE."""
+
+    def setUp(self):
+        import fb_cookie_from_export as m
+        self.m = m
+
+    def test_json_array_export(self):
+        raw = json.dumps([
+            {'name': 'datr', 'value': 'd'},
+            {'name': 'c_user', 'value': '100'},
+            {'name': 'xs', 'value': 'tok'},
+        ])
+        cookies = self.m.parse_export(raw)
+        self.assertEqual(self.m.build_cookie_value(cookies), 'c_user=100; xs=tok')
+
+    def test_json_object_wrapper(self):
+        raw = json.dumps({'cookies': [{'name': 'c_user', 'value': '1'},
+                                      {'name': 'xs', 'value': 't'}]})
+        cookies = self.m.parse_export(raw)
+        self.assertEqual(self.m.build_cookie_value(cookies), 'c_user=1; xs=t')
+
+    def test_plain_name_value_map(self):
+        cookies = self.m.parse_export(json.dumps({'c_user': '1', 'xs': 't'}))
+        self.assertEqual(self.m.build_cookie_value(cookies), 'c_user=1; xs=t')
+
+    def test_netscape_cookies_txt(self):
+        raw = ('# Netscape HTTP Cookie File\n'
+               '.facebook.com\tTRUE\t/\tTRUE\t1823\tc_user\t100\n'
+               '#HttpOnly_.facebook.com\tTRUE\t/\tTRUE\t1823\txs\ttok\n')
+        cookies = self.m.parse_export(raw)
+        self.assertEqual(self.m.build_cookie_value(cookies), 'c_user=100; xs=tok')
+
+    def test_include_all_keeps_every_cookie(self):
+        raw = json.dumps([{'name': 'c_user', 'value': '1'},
+                          {'name': 'xs', 'value': 't'},
+                          {'name': 'fr', 'value': 'f'}])
+        cookies = self.m.parse_export(raw)
+        self.assertEqual(self.m.build_cookie_value(cookies, include_all=True),
+                         'c_user=1; xs=t; fr=f')
+
+    def test_missing_xs_is_an_actionable_error(self):
+        raw = json.dumps([{'name': 'c_user', 'value': '1'}])
+        cookies = self.m.parse_export(raw)
+        with self.assertRaises(ValueError) as ctx:
+            self.m.build_cookie_value(cookies)
+        # xs is HttpOnly and commonly omitted by default; the message must say so.
+        self.assertIn('xs', str(ctx.exception))
+        self.assertIn('HttpOnly', str(ctx.exception))
+
+    def test_empty_and_unrecognised_inputs_raise(self):
+        with self.assertRaises(ValueError):
+            self.m.parse_export('   ')
+        with self.assertRaises(ValueError):
+            self.m.parse_export('not a cookie file')
+        with self.assertRaises(ValueError):
+            self.m.parse_export('[{"name": broken}]')
+        with self.assertRaises(ValueError):
+            self.m.parse_export('[]')
+
+    def test_output_round_trips_through_the_spider(self):
+        """The generated value must be exactly what get_cookie() expects."""
+        raw = json.dumps([{'name': 'c_user', 'value': '100'},
+                          {'name': 'xs', 'value': '34%3Aabc'}])
+        value = self.m.build_cookie_value(self.m.parse_export(raw))
+        with mock.patch.dict('os.environ', {'FACEBOOK_COOKIE': value}):
+            self.assertEqual(u.get_cookie(), value)
+        self.assertIn('c_user=100', value)
+        self.assertIn('xs=34%3Aabc', value)
+
+
 if __name__ == '__main__':
     unittest.main()

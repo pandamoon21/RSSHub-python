@@ -165,6 +165,15 @@ All five routes also honour the [universal filters](#universal-filtering)
 
 Some notes on reliability:
 
+- **Media is embedded as HTML**, not attachments: photos become `<img>` and videos become
+  `<video controls poster=... src=...>`, so a reader that renders HTML shows them inline.
+  Multi-photo and multi-video posts emit every item.
+- **Media URLs expire after roughly a week.** Facebook CDN links carry an `oe=` expiry
+  (observed: ~4 days out). An entry already fetched by your reader keeps working while its
+  cached HTML is fresh, but a *newly* generated feed re-signs the URLs, so readers that
+  re-poll the feed will not see broken images. Readers that store old media URLs and never
+  refresh the entry can end up with dead images after that window — that is a Facebook
+  limitation, not something the feed can prevent.
 - **Profiles must be public.** Posts behind a login wall need a cookie that can already
   see them. Meta has no public API for another user's timeline, so a private profile
   simply returns nothing.

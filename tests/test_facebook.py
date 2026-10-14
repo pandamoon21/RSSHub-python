@@ -6,6 +6,7 @@ behaviours that were previously only verified by hand — several of which were 
 transport exceptions escaping as HTTP 500).
 """
 import json
+import re
 import unittest
 from unittest import mock
 from xml.etree import ElementTree
@@ -870,6 +871,33 @@ class GroupIdentifierTests(FacebookTestBase):
         self.assertIn('/groups/586220791393074/user/', member_urls[0])
 
 
+def make_nested_story(media=None, text=None, subattachment_nodes=None,
+                      permalink='https://www.facebook.com/x/posts/1'):
+    """Build a story in the nested GraphQL shape.
+
+    Assembled programmatically rather than as one nested literal: hand-counting the
+    closing braces for `comet_sections.content.story` is error-prone and repeatedly
+    produced syntax errors in review.
+    """
+    attachment = {}
+    if media is not None:
+        attachment['styles'] = {'attachment': {'media': media}}
+    elif subattachment_nodes is not None:
+        attachment['all_subattachments'] = {'nodes': subattachment_nodes}
+
+    story = {'attachments': [attachment] if attachment else []}
+    if text is not None:
+        story['message'] = {'text': text}
+
+    return {
+        '__typename': 'Story',
+        'permalink_url': permalink,
+        'creation_time': 1700000000,
+        'actors': [{'name': 'A'}],
+        'comet_sections': {'content': {'story': story}},
+    }
+
+
 class MediaRenderingTests(unittest.TestCase):
     """Images, video and captions must reach the feed; a Reel must not render empty."""
 
@@ -967,6 +995,54 @@ class MediaRenderingTests(unittest.TestCase):
             out = render_template('main/atom.xml', title='T', link='L',
                                   description='D', author='A', items=items)
         ElementTree.fromstring(out.encode())
+
+
+    def test_video_tag_has_controls_poster_and_src(self):
+        """A reader needs all three; a bare <video> would be unplayable."""
+        media = {'__typename': 'Video',
+                 'videoDeliveryLegacyFields': {
+                     'browser_native_hd_url': 'https://v/hd.mp4',
+                     'browser_native_sd_url': 'https://v/sd.mp4'},
+                 'preferred_thumbnail': {'image': {'uri': 'https://p.jpg'}}}
+        story = make_nested_story(media=media, text='video post')
+        html = u.stories_to_items([story])[0]['description']
+        tag = re.search(r'<video[^>]*>', html).group(0)
+        self.assertIn('controls', tag)
+        self.assertIn('poster="https://p.jpg"', tag)
+        self.assertIn('src="https://v/hd.mp4"', tag, 'HD should be preferred')
+
+    def test_video_falls_back_to_sd_when_hd_absent(self):
+        media = {'__typename': 'Video',
+                 'videoDeliveryLegacyFields': {'browser_native_sd_url': 'https://v/sd.mp4'}}
+        story = make_nested_story(media=media)
+        html = u.stories_to_items([story])[0]['description']
+        self.assertIn('src="https://v/sd.mp4"', html)
+
+    def test_video_without_urls_does_not_emit_broken_tag(self):
+        """A <video> with no src is worse than nothing: it renders as a dead box."""
+        media = {'__typename': 'Video',
+                 'preferred_thumbnail': {'image': {'uri': 'https://p.jpg'}}}
+        story = make_nested_story(media=media)
+        html = u.stories_to_items([story])[0]['description']
+        self.assertNotIn('<video', html)
+
+    def test_carousel_renders_every_subattachment(self):
+        """A multi-video post is one attachment with several subattachments."""
+        def sub(url):
+            return {'media': {'__typename': 'Video',
+                              'videoDeliveryLegacyFields': {'browser_native_sd_url': url}}}
+        story = make_nested_story(subattachment_nodes=[
+            sub('https://v/1.mp4'), sub('https://v/2.mp4'), sub('https://v/3.mp4')])
+        html = u.stories_to_items([story])[0]['description']
+        self.assertEqual(html.count('<video'), 3)
+        for n in (1, 2, 3):
+            self.assertIn(f'https://v/{n}.mp4', html)
+
+    def test_multi_video_carousel_tolerates_empty_nodes(self):
+        story = make_nested_story(subattachment_nodes=[])
+        items = u.stories_to_items([story])
+        self.assertEqual(len(items), 1)
+        self.assertNotIn('<video', items[0]['description'])
 
 
 if __name__ == '__main__':

@@ -1,11 +1,13 @@
-# Hide the uv/poetry manifests so Vercel resolves dependencies with pip against
-# requirements.txt instead of trying to use a lockfile-based installer.
+# Vercel resolves Python dependencies with uv whenever it sees pyproject.toml, and
+# uv.lock here is stale (it predates trafilatura/playwright/pymupdf/ebooklib/mobi and
+# flask-caching being added to pyproject.toml). `uv sync --locked` therefore fails its
+# consistency check, and `uv sync` without --locked would pull Playwright and pymupdf
+# and exceed the function bundle limit.
+#
+# Hiding these files makes Vercel fall back to pip against requirements.txt, which is
+# the curated runtime set for this project.
 uv.lock
 pyproject.toml
-poetry.lock
 Pipfile
 Pipfile.lock
-
-# NOTE: .python-version is intentionally NOT ignored. Vercel reads it to select the
-# Python runtime, and without it the build silently uses Vercel's default version
-# rather than the 3.10 this project targets.
+poetry.lock

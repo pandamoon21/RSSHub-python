@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request
+from flask import Blueprint, Response, render_template, request
 
 from rsshub.extensions import cache
 from rsshub.utils import swr_cache
@@ -310,6 +310,43 @@ def kocowa_comcast():
 def fitgirl_feed():
     from rsshub.spiders.fitgirl.feed import ctx
     return render_template('main/atom.xml', **filter_content(ctx()))
+
+def _facebook_feed(build_ctx, **params):
+    """Render a Facebook feed, mapping upstream failures onto honest HTTP statuses.
+
+    404 -> the page/group/query does not exist.
+    503 -> transient or operator-fixable (rate limit, expired cookie, rotated doc_id).
+           Retryable, so readers back off instead of caching a permanent failure.
+    """
+    from rsshub.spiders.facebook.utils import FacebookNotFound, FacebookRateLimited
+    limit = request.args.get('limit', type=int)
+    try:
+        return render_template('main/atom.xml', **filter_content(build_ctx(limit=limit, **params)))
+    except FacebookNotFound as e:
+        return Response(f'Not found. {e}', status=404, mimetype='text/plain')
+    except FacebookRateLimited as e:
+        return Response(f'Facebook unavailable. {e}', status=503, mimetype='text/plain')
+
+
+@bp.route('/facebook/page/<string:id>')
+@swr_cache(timeout=1800)  # Facebook rate-limits hard; serve stale rather than fail on a blip
+def facebook_page(id=''):
+    from rsshub.spiders.facebook.page import ctx
+    return _facebook_feed(ctx, id=id)
+
+
+@bp.route('/facebook/group/<string:id>')
+@swr_cache(timeout=1800)  # Facebook rate-limits hard; serve stale rather than fail on a blip
+def facebook_group(id=''):
+    from rsshub.spiders.facebook.group import ctx
+    return _facebook_feed(ctx, id=id)
+
+
+@bp.route('/facebook/marketplace/<string:query>')
+@swr_cache(timeout=1800)  # Marketplace is login-walled and slow; serve stale on upstream failure
+def facebook_marketplace(query=''):
+    from rsshub.spiders.facebook.marketplace import ctx
+    return _facebook_feed(ctx, query=query)
 
 
 @bp.route('/filter/')

@@ -79,6 +79,15 @@ Filter any feed using URL parameters:
 - `exclude_title` / `exclude_description`: Remove unwanted content.
 - `limit`: Control the number of items returned.
 
+### Environment Variables
+Some spiders need credentials or a proxy for upstreams that are geo-restricted or rate-limited.
+
+| Variable | Used by | Purpose |
+|---|---|---|
+| `FACEBOOK_COOKIE` | `/facebook/page/:id`, `/facebook/group/:id`, `/facebook/marketplace/:query` | **Required.** Facebook rejects ordinary HTTP clients on TLS fingerprint, so requests are sent via `curl_cffi` impersonating Chrome, and an authenticated session is needed on top. Use the `c_user=...; xs=...` pair from a logged-in browser, e.g. `c_user=1234567890; xs=12%3Aabcdef...`. Marketplace results are scoped to the account's own region. |
+| `GENIETV_PROXY` | `/genietv/*` | HTTP(S) proxy with a Korean egress; the KT hosts are geo-restricted. |
+| `SECRET_KEY` | Flask sessions | Overrides the insecure built-in development default. |
+
 ---
 
 ## ☁️ Deployment

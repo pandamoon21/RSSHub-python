@@ -1906,4 +1906,51 @@
 <br>
 <!--item info end-->
 
+<!--item info start-->
+<div class="card text-left">
+    <div class="card-body">
+        <h4 class="card-title">Facebook Page / Profile</h4>
+        <h6 class="text-muted">Facebook Page / Profile <a href="https://github.com/DIYgod/RSSHub" target="_blank" class="badge badge-secondary">ported from RSSHub</a> <span class="badge badge-warning">anti-crawler</span></h6>
+        <p class="card-text">Example：<a href="https://rss-panda1.vercel.app/facebook/page/NASA" target="_blank">https://rss-panda1.vercel.app/facebook/page/NASA</a></p>
+        <p class="card-text">Route：<code>/facebook/page/:id</code></p>
+        <p class="card-text">Parameter: <code>id</code> Page or profile username, or numeric ID. Works for pages and <strong>public personal profiles</strong> (e.g. <code>/facebook/page/zuck</code>).</p>
+        <p class="card-text">Parameter: <code>limit</code> Optional number of posts, defaults to 21 (maximum 100).</p>
+        <p class="card-text"><span class="badge badge-warning">Login required</span> <code>FACEBOOK_COOKIE</code> is required (only the <code>c_user</code> and <code>xs</code> cookies are needed). Facebook rejects plain HTTP clients on TLS fingerprint and serves a login wall without a session. A missing or expired cookie returns HTTP 503; an unknown page returns 404.</p>
+    </div>
+</div>
+<br>
+<!--item info end-->
+
+<!--item info start-->
+<div class="card text-left">
+    <div class="card-body">
+        <h4 class="card-title">Facebook Group</h4>
+        <h6 class="text-muted">Facebook Group <a href="https://github.com/DIYgod/RSSHub" target="_blank" class="badge badge-secondary">ported from RSSHub</a> <span class="badge badge-warning">anti-crawler</span></h6>
+        <p class="card-text">Example：<a href="https://rss-panda1.vercel.app/facebook/group/613870175328566" target="_blank">https://rss-panda1.vercel.app/facebook/group/613870175328566</a></p>
+        <p class="card-text">Route：<code>/facebook/group/:id</code></p>
+        <p class="card-text">Parameter: <code>id</code> Group ID or group username. Posts are returned in chronological order.</p>
+        <p class="card-text">Parameter: <code>limit</code> Optional number of posts, defaults to 21 (maximum 100).</p>
+        <p class="card-text"><span class="badge badge-warning">Login required</span> <code>FACEBOOK_COOKIE</code> is required. Private groups will not work without a session that can already see them.</p>
+    </div>
+</div>
+<br>
+<!--item info end-->
+
+<!--item info start-->
+<div class="card text-left">
+    <div class="card-body">
+        <h4 class="card-title">Facebook Marketplace</h4>
+        <h6 class="text-muted">Facebook Marketplace <span class="badge badge-warning">login required</span> <span class="badge badge-warning">anti-crawler</span></h6>
+        <p class="card-text">Example：<a href="https://rss-panda1.vercel.app/facebook/marketplace/iphone" target="_blank">https://rss-panda1.vercel.app/facebook/marketplace/iphone</a></p>
+        <p class="card-text">Route：<code>/facebook/marketplace/:query</code></p>
+        <p class="card-text">Parameter: <code>query</code> Search terms, e.g. <code>iphone</code>, <code>honda jazz</code>.</p>
+        <p class="card-text">Parameter: <code>limit</code> Optional number of listings, defaults to 21 (maximum 100).</p>
+        <p class="card-text">Returns title, formatted price, city and photo for each listing. Results are filtered to titles matching the query, so an unrelated query returns an empty feed rather than Facebook's placeholder listings.</p>
+        <p class="card-text"><span class="badge badge-warning">Login required</span> <code>FACEBOOK_COOKIE</code> is required. Results are scoped to the account's own Marketplace region, so a query for another country needs an account or proxy from that region.</p>
+        <p class="card-text"><strong>Note:</strong> Marketplace has no stable public API — listings are read from JSON embedded in the search page. If Facebook changes that page, this feed needs updating.</p>
+    </div>
+</div>
+<br>
+<!--item info end-->
+
 {% endblock content %}

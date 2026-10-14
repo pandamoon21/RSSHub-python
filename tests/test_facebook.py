@@ -870,5 +870,104 @@ class GroupIdentifierTests(FacebookTestBase):
         self.assertIn('/groups/586220791393074/user/', member_urls[0])
 
 
+class MediaRenderingTests(unittest.TestCase):
+    """Images, video and captions must reach the feed; a Reel must not render empty."""
+
+    def _reel_story(self):
+        """A Reel as Facebook actually ships it: caption + thumbnail nested inside."""
+        return {
+            '__typename': 'Story',
+            'permalink_url': 'https://www.facebook.com/NASA/posts/pfbid0abc',
+            'creation_time': 1791843606,
+            'actors': [{'name': 'NASA'}],
+            'comet_sections': {'content': {'story': {'message': None, 'attachments': [{
+                'styles': {'attachment': {
+                    '__typename': 'StoryAttachmentFBReelsStyleRenderer',
+                    'style_infos': [{
+                        '__typename': 'FBShortsShareAttachmentStyleInfo',
+                        'fb_shorts_story': {
+                            'id': 'UzpfSTQ6',
+                            'creation_time': 1791841101,
+                            'message': {'text': "It's a new off-world record! \U0001F3C5"},
+                            'attachments': [],
+                        },
+                    }],
+                }},
+            }]}}},
+        }
+
+    def test_reel_caption_becomes_the_title(self):
+        """Regression: the title used to fall back to the page name."""
+        items = u.stories_to_items([self._reel_story()])
+        self.assertIn('off-world record', items[0]['title'])
+        self.assertNotEqual(items[0]['title'], 'NASA')
+
+    def test_reel_is_not_an_empty_entry(self):
+        """Regression: a Reel rendered a zero-length description."""
+        items = u.stories_to_items([self._reel_story()])
+        self.assertTrue(items[0]['description'], 'reel description must not be empty')
+
+    def test_reel_thumbnail_is_emitted_when_no_inner_attachment(self):
+        story = self._reel_story()
+        info = (story['comet_sections']['content']['story']['attachments'][0]
+                ['styles']['attachment']['style_infos'][0]['fb_shorts_story'])
+        info['preferred_thumbnail'] = {'image': {'uri': 'https://scontent/x.jpg'}}
+        items = u.stories_to_items([story])
+        self.assertIn('<img', items[0]['description'])
+        self.assertIn('https://scontent/x.jpg', items[0]['description'])
+
+    def test_photo_attachment_renders_img(self):
+        story = {
+            '__typename': 'Story', 'permalink_url': 'https://f/p/1',
+            'creation_time': 1700000000, 'actors': [{'name': 'A'}],
+            'comet_sections': {'content': {'story': {
+                'message': {'text': 'a photo post'},
+                'attachments': [{'styles': {'attachment': {
+                    'media': {'photo_image': {'uri': 'https://scontent/p.jpg'},
+                              'accessibility_caption': 'cap'}}}}],
+            }}},
+        }
+        items = u.stories_to_items([story])
+        self.assertIn('<img', items[0]['description'])
+        self.assertIn('https://scontent/p.jpg', items[0]['description'])
+
+    def test_video_attachment_renders_video_tag(self):
+        story = {
+            '__typename': 'Story', 'permalink_url': 'https://f/p/2',
+            'creation_time': 1700000000, 'actors': [{'name': 'A'}],
+            'comet_sections': {'content': {'story': {
+                'message': {'text': 'a video post'},
+                'attachments': [{'styles': {'attachment': {
+                    'media': {'__typename': 'Video',
+                              'videoDeliveryLegacyFields': {
+                                  'browser_native_sd_url': 'https://v/sd.mp4'},
+                              'preferred_thumbnail': {'image': {'uri': 'https://p.jpg'}}}}}}],
+            }}},
+        }
+        items = u.stories_to_items([story])
+        self.assertIn('<video', items[0]['description'])
+        self.assertIn('https://v/sd.mp4', items[0]['description'])
+
+    def test_shorts_helper_ignores_plain_attachments(self):
+        self.assertIsNone(u._shorts_story({'styles': {'attachment': {'media': {}}}}))
+        self.assertIsNone(u._shorts_story({}))
+
+    def test_first_fbcdn_uri_finds_nested_thumbnail(self):
+        blob = {'a': [{'b': {'preferred_thumbnail': {'image': {'uri': 'https://x/1.jpg'}}}}]}
+        self.assertEqual(u._first_fbcdn_uri(blob), 'https://x/1.jpg')
+        self.assertIsNone(u._first_fbcdn_uri({'nothing': 1}))
+
+    def test_rendered_reel_survives_the_template(self):
+        """End-to-end: the fixed output must still be well-formed XML."""
+        from rsshub import create_app
+        app = create_app('testing')
+        items = u.stories_to_items([self._reel_story()])
+        from flask import render_template
+        with app.test_request_context('/'):
+            out = render_template('main/atom.xml', title='T', link='L',
+                                  description='D', author='A', items=items)
+        ElementTree.fromstring(out.encode())
+
+
 if __name__ == '__main__':
     unittest.main()

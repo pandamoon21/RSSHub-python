@@ -352,12 +352,52 @@ def render_rich_block(block):
     return f'<{tag}>{chars}</{tag}>'
 
 
+def _shorts_story(attachment):
+    """Return the inner Reel/Shorts story carried by an attachment, if present.
+
+    Facebook ships a Reel (fb_shorts) differently from a normal video: the caption and
+    thumbnail live under
+    ``styles.attachment.style_infos[].fb_shorts_story``, while the outer story has no
+    message and the attachment's own `media` holds only an id. Without unwrapping this,
+    a Reels post renders as an empty entry.
+    """
+    styles = (attachment.get('styles') or {}).get('attachment') or {}
+    for info in styles.get('style_infos') or []:
+        inner = info.get('fb_shorts_story') if isinstance(info, dict) else None
+        if inner:
+            return inner
+    return None
+
+
+def _first_fbcdn_uri(value, depth=0):
+    """Find the first fbcdn image/video URI anywhere in a nested structure."""
+    if depth > 8:
+        return None
+    if isinstance(value, dict):
+        # Prefer explicit thumbnail/photo fields before descending further.
+        for key in ('preferred_thumbnail', 'photo_image', 'image'):
+            node = value.get(key)
+            if isinstance(node, dict) and isinstance(node.get('uri'), str):
+                return node['uri']
+        for child in value.values():
+            found = _first_fbcdn_uri(child, depth + 1)
+            if found:
+                return found
+    elif isinstance(value, list):
+        for child in value[:6]:
+            found = _first_fbcdn_uri(child, depth + 1)
+            if found:
+                return found
+    return None
+
+
 def render_story(story):
     """Render a story into {'text': plain text or None, 'html': full HTML}.
 
-    Handles both shapes Facebook uses. The GraphQL feed nests content under
+    Handles every shape Facebook uses. The GraphQL feed nests content under
     ``comet_sections.content.story``; the JSON embedded in a page (e.g. a group member
-    view) puts ``message`` and ``attachments`` at the top level.
+    view) puts ``message`` and ``attachments`` at the top level; and a Reel/Shorts
+    attachment carries its own caption and thumbnail one level deeper again.
     """
     section = story.get('comet_sections', {}).get('message') or {}
     message = section.get('story', {}).get('message') or story.get('message')
@@ -373,7 +413,28 @@ def render_story(story):
     # Attachments: nested shape carries styles.attachment, flat shape is a plain list.
     attachments = []
     for att in story.get('attachments') or []:
-        styles = (att.get('styles') or {}).get('attachment') if isinstance(att, dict) else None
+        if not isinstance(att, dict):
+            attachments.append(render_attachment(att))
+            continue
+
+        reel = _shorts_story(att)
+        if reel:
+            # Reel: take the caption from inside, then its own thumbnail.
+            reel_message = reel.get('message')
+            if reel_message and not text_html:
+                text_html = render_text(reel_message)
+            reel_html = ''.join(
+                render_attachment((child.get('styles') or {}).get('attachment') or child)
+                for child in (reel.get('attachments') or []) if isinstance(child, dict)
+            )
+            if not reel_html:
+                thumb = _first_fbcdn_uri(reel)
+                if thumb:
+                    reel_html = f"<img referrerpolicy='no-referrer' src='{thumb}'>"
+            attachments.append(reel_html)
+            continue
+
+        styles = (att.get('styles') or {}).get('attachment')
         attachments.append(render_attachment(styles if styles is not None else att))
 
     return {'text': (message or {}).get('text'), 'html': text_html + ''.join(attachments)}
@@ -712,8 +773,20 @@ def stories_to_items(stories):
         # GraphQL uses permalink_url; the flat page-embedded shape uses url.
         link = node.get('permalink_url') or node.get('url') or story.get('url') or ''
 
+        title = own.get('text') or (shared or {}).get('text')
+        if not title:
+            # A Reel keeps its caption inside the attachment, so fall back to that
+            # before settling for the author (which reads poorly as a title).
+            for att in story.get('attachments') or []:
+                reel = _shorts_story(att) if isinstance(att, dict) else None
+                if reel:
+                    title = (reel.get('message') or {}).get('text')
+                    if title:
+                        break
+        title = title or author
+
         items.append({
-            'title': clean_xml(own.get('text') or (shared or {}).get('text') or author),
+            'title': clean_xml(title),
             'description': clean_xml(own.get('html', '') + ((shared or {}).get('html') or '')),
             'link': link,
             'pubDate': parse_timestamp(node.get('creation_time')),

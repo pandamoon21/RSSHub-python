@@ -139,10 +139,46 @@ Marketplace accepts two extra query parameters, matching Facebook's own filters:
 /facebook/marketplace/ssd
 ```
 
-- `location` — Marketplace city slug, lowercase and without spaces (`yogyakartacity`,
-  `jakartaselatan`). Without it, results are scoped to your account's region.
+- `location` — Marketplace city slug. Without it, results are scoped to your account's own
+  region. See the list below.
 - `days` — only listings posted within this many days.
 - `limit` — how many items, default 21, maximum 100.
+
+##### `location` slugs
+
+The slug is **not** the city name lowercased — Facebook assigns each city its own string,
+and there is no rule that derives one from the other. `yogyakartacity` works,
+`yogyakarta` does not; `jakarta` works, but `jakartacity` does not. Facebook publishes the
+canonical list per country at
+[`facebook.com/marketplace/directory/<country>`](https://www.facebook.com/marketplace/directory/ID)
+(e.g. `/directory/ID` for Indonesia) — that directory is the source of the table below.
+
+Indonesia (all 23 from the directory, each verified reachable):
+
+| City | Slug | City | Slug |
+|---|---|---|---|
+| Jakarta | `jakarta` | Bandar Lampung | `bandarlampung` |
+| Surabaya | `surabaya` | Batam | `batam` |
+| Bandung | `bandung` | Jambi | `jambi` |
+| Medan | `medan` | Balikpapan | `balikpapan` |
+| Semarang | `semarang` | Samarinda | `samarinda` |
+| Makassar | `makassar` | Pontianak | `pontianak` |
+| Palembang | `palembang` | Sidoarjo | `sidoarjo` |
+| Denpasar (Bali) | `denpasar` | Bogor | `bogor` |
+| Tangerang | `tangerang` | Malang | `malang` |
+| Bekasi | `bekasi` | Padang | `padang` |
+| Manado | `manado` | Pekanbaru | `pekanbaru` |
+| Yogyakarta City | `yogyakartacity` | | |
+
+Other countries use the same pattern with their own slugs (`nyc`, `la`, `vegas`,
+`sanfrancisco` for the US) — read them off the directory page for that country.
+
+> **A wrong slug fails silently.** Facebook does not return an error for an unknown city;
+> it redirects to a generic category page with **no location filter at all**. The feed then
+> looks fine but shows listings from everywhere. So `/facebook/marketplace/ssd?location=jakartaselatan`
+> quietly returns unfiltered results, and `/facebook/marketplace/ssd?location=yogyakarta`
+> does too. Confirm the slug is one of the above (or in the directory) before trusting the
+> `Location:` line in the output.
 
 All five routes also honour the [universal filters](#universal-filtering)
 

@@ -84,16 +84,16 @@ Some spiders need credentials or a proxy for upstreams that are geo-restricted o
 
 | Variable | Used by | Purpose |
 |---|---|---|
-| `FACEBOOK_COOKIE` | `/facebook/page/:id`, `/facebook/group/:id`, `/facebook/marketplace/:query` | **Required.** Facebook rejects ordinary HTTP clients on TLS fingerprint, so requests are sent via `curl_cffi` impersonating Chrome, and an authenticated session is needed on top. Use the `c_user=...; xs=...` pair from a logged-in browser, e.g. `c_user=1234567890; xs=12%3Aabcdef...`. Marketplace results are scoped to the account's own region. **Self-hosted only** — see the note below. |
+| `FACEBOOK_COOKIE` | `/facebook/page/:id`, `/facebook/group/:id`, `/facebook/marketplace/:query` | **Required.** Facebook rejects ordinary HTTP clients on TLS fingerprint, so requests are sent via `curl_cffi` impersonating Chrome, and an authenticated session is needed on top. Use the `c_user=...; xs=...` pair from a logged-in browser, e.g. `c_user=1234567890; xs=12%3Aabcdef...`. Marketplace results are scoped to the account's own region. |
 | `GENIETV_PROXY` | `/genietv/*` | HTTP(S) proxy with a Korean egress; the KT hosts are geo-restricted. |
 | `SECRET_KEY` | Flask sessions | Overrides the insecure built-in development default. |
 
-> **Facebook feeds need a full install.** They depend on `curl_cffi`, which is in
-> `requirements.txt` / `requirements-full.txt` but **not** in `requirements-lite.txt`.
-> On Vercel (which installs the lite subset) the Facebook routes return HTTP 503 with an
-> explanatory message rather than failing. Set `FACEBOOK_COOKIE` there only after adding
-> `curl-cffi` to the lite manifest. Also note that Vercel's serverless IPs are commonly
-> rate-limited by Facebook, so these feeds are better suited to a self-hosted server.
+> **Facebook feeds are sensitive to the host IP.** `curl_cffi` is included in both
+> `requirements.txt` and `requirements-lite.txt`, so they work on Vercel as well as a
+> self-hosted server. However Facebook aggressively rate-limits shared datacenter IPs,
+> and posting a login cookie from a serverless platform is a policy consideration of its
+> own. If you see frequent 503s on those three routes, self-hosting with a residential or
+> dedicated egress is more reliable.
 
 ---
 

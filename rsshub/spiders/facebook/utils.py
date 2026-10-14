@@ -960,10 +960,11 @@ def fetch_marketplace_listings(query, limit=DEFAULT_LIMIT, location=None, days=N
 def _marketplace_photo_uris(listing):
     """Return the listing's photo URIs in order, primary first, de-duplicated.
 
-    Marketplace exposes the full gallery under ``listing_photos`` (each entry shaped like
-    ``{'id': ..., 'image': {'uri': ...}}``), while ``primary_listing_photo`` holds only the
-    cover image. Search payloads are inconsistent — some nodes carry only the primary —
-    so the primary is always included and the gallery appended when present.
+    Marketplace exposes the full gallery under ``listing_photos`` — either as a bare list
+    or, like every other GraphQL collection in this feed, as a ``{'nodes': [...]}``
+    connection — while ``primary_listing_photo`` holds only the cover image. Search
+    payloads are inconsistent (some nodes carry no gallery at all), so the primary is
+    always included and the gallery appended when present.
     """
     uris = []
 
@@ -978,7 +979,13 @@ def _marketplace_photo_uris(listing):
         add((photo.get('photo_image') or {}).get('uri'))
 
     pick(listing.get('primary_listing_photo'))
-    for photo in listing.get('listing_photos') or []:
+    photos = listing.get('listing_photos')
+    if isinstance(photos, dict):
+        photos = photos.get('nodes') or photos.get('edges') or []
+    for photo in photos if isinstance(photos, (list, tuple)) else []:
+        # Connection edges wrap the node one level deeper again.
+        if isinstance(photo, dict) and isinstance(photo.get('node'), dict):
+            photo = photo['node']
         pick(photo)
     return uris
 

@@ -430,6 +430,20 @@ class MarketplaceTests(FacebookTestBase):
             primary_listing_photo=None, listing_photos=None)])
         self.assertNotIn('<img', items[0]['description'])
 
+    def test_gallery_accepts_connection_shape(self):
+        """Facebook returns collections as {'nodes': [...]} — the gallery included."""
+        items = u.marketplace_to_items([self._listing(
+            primary_listing_photo={'image': {'uri': 'https://i/cover.jpg'}},
+            listing_photos={'nodes': [{'image': {'uri': 'https://i/2.jpg'}},
+                                      {'image': {'uri': 'https://i/3.jpg'}}]})])
+        self.assertEqual(items[0]['description'].count('<img'), 3)
+
+    def test_gallery_unwraps_edge_nodes(self):
+        items = u.marketplace_to_items([self._listing(
+            primary_listing_photo={'image': {'uri': 'https://i/cover.jpg'}},
+            listing_photos=[{'node': {'image': {'uri': 'https://i/2.jpg'}}}])])
+        self.assertEqual(items[0]['description'].count('<img'), 2)
+
     def test_blank_query_raises_not_found(self):
         p1, p2 = self.patch_network(FakeSession())
         with p1, p2:

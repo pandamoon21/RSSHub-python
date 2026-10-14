@@ -371,6 +371,65 @@ class MarketplaceTests(FacebookTestBase):
         items = u.marketplace_to_items([self._listing(marketplace_listing_title='x ]]> y')])
         self.assertNotIn(']]>', items[0]['title'])
 
+    def test_to_items_includes_listing_description(self):
+        """The regression: the seller's own body text was dropped from the feed."""
+        body = 'Harga net\nHealth 100\nPerf 100\nKapasitas 2tb unit simpanan'
+        items = u.marketplace_to_items([self._listing(
+            marketplace_listing_description=body)])
+        self.assertEqual(len(items), 1)
+        desc = items[0]['description']
+        self.assertIn('Harga net', desc)
+        self.assertIn('Kapasitas 2tb unit simpanan', desc)
+        self.assertIn('Harga net<br>Health 100', desc)
+
+    def test_to_items_reads_alternate_description_shapes(self):
+        cases = [
+            {'redacted_description': {'text': 'from redacted'}},
+            {'marketplace_listing_description_rich': {'text': 'from rich'}},
+            {'marketplace_listing_description': {'text': 'from nested text'}},
+        ]
+        for over in cases:
+            items = u.marketplace_to_items([self._listing(**over)])
+            self.assertIn('from', items[0]['description'], over)
+
+    def test_to_items_without_description_stays_empty(self):
+        """No body text must not introduce a stray empty segment."""
+        items = u.marketplace_to_items([self._listing(
+            listing_price=None, location=None, primary_listing_photo=None,
+            marketplace_listing_seller=None)])
+        self.assertEqual(items[0]['description'], '')
+
+    def test_description_is_xml_clean(self):
+        items = u.marketplace_to_items([self._listing(
+            marketplace_listing_description='bad ]]> and \x0b ctrl')])
+        self.assertNotIn(']]>', items[0]['description'])
+        self.assertNotIn('\x0b', items[0]['description'])
+
+    def test_to_items_renders_every_gallery_photo(self):
+        """The regression: only primary_listing_photo was emitted, dropping the gallery."""
+        items = u.marketplace_to_items([self._listing(
+            primary_listing_photo={'image': {'uri': 'https://i/cover.jpg'}},
+            listing_photos=[
+                {'id': 'a', 'image': {'uri': 'https://i/cover.jpg'}},
+                {'id': 'b', 'image': {'uri': 'https://i/2.jpg'}},
+                {'id': 'c', 'image': {'uri': 'https://i/3.jpg'}},
+            ])])
+        desc = items[0]['description']
+        self.assertEqual(desc.count('<img'), 3)
+        self.assertIn("src='https://i/2.jpg'", desc)
+        self.assertIn("src='https://i/3.jpg'", desc)
+
+    def test_gallery_dedupes_primary_photo(self):
+        items = u.marketplace_to_items([self._listing(
+            primary_listing_photo={'image': {'uri': 'https://i/cover.jpg'}},
+            listing_photos=[{'image': {'uri': 'https://i/cover.jpg'}}])])
+        self.assertEqual(items[0]['description'].count('<img'), 1)
+
+    def test_gallery_tolerates_missing_photos(self):
+        items = u.marketplace_to_items([self._listing(
+            primary_listing_photo=None, listing_photos=None)])
+        self.assertNotIn('<img', items[0]['description'])
+
     def test_blank_query_raises_not_found(self):
         p1, p2 = self.patch_network(FakeSession())
         with p1, p2:

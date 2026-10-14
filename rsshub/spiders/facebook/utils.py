@@ -957,6 +957,51 @@ def fetch_marketplace_listings(query, limit=DEFAULT_LIMIT, location=None, days=N
     return listings
 
 
+def _marketplace_photo_uris(listing):
+    """Return the listing's photo URIs in order, primary first, de-duplicated.
+
+    Marketplace exposes the full gallery under ``listing_photos`` (each entry shaped like
+    ``{'id': ..., 'image': {'uri': ...}}``), while ``primary_listing_photo`` holds only the
+    cover image. Search payloads are inconsistent — some nodes carry only the primary —
+    so the primary is always included and the gallery appended when present.
+    """
+    uris = []
+
+    def add(uri):
+        if isinstance(uri, str) and uri and uri not in uris:
+            uris.append(uri)
+
+    def pick(photo):
+        if not isinstance(photo, dict):
+            return
+        add((photo.get('image') or {}).get('uri'))
+        add((photo.get('photo_image') or {}).get('uri'))
+
+    pick(listing.get('primary_listing_photo'))
+    for photo in listing.get('listing_photos') or []:
+        pick(photo)
+    return uris
+
+def _marketplace_description(listing):
+    """Return the seller's listing description text, or None.
+
+    Marketplace exposes the body under different keys depending on how the node was
+    produced: search payloads carry ``marketplace_listing_description`` (sometimes with a
+    richer ``marketplace_listing_description_rich`` sibling), while some seller-page and
+    prefetch nodes only carry ``redacted_description`` (or nest the text one level down
+    under a ``text`` key, and occasionally an ``entity_ranges`` list for @mentions).
+    """
+    for key in ('marketplace_listing_description', 'marketplace_listing_description_rich',
+                'redacted_description', 'description'):
+        value = listing.get(key)
+        if isinstance(value, str) and value.strip():
+            return value
+        if isinstance(value, dict):
+            text = value.get('text')
+            if isinstance(text, str) and text.strip():
+                return text
+    return None
+
 def marketplace_to_items(listings):
     """Convert raw Marketplace listing dicts into spider items.
 
@@ -986,10 +1031,12 @@ def marketplace_to_items(listings):
         elif listing.get('is_pending'):
             parts.append('PENDING')
 
-        photo = listing.get('primary_listing_photo') or {}
-        image = (photo.get('image') or {}).get('uri') or (photo.get('photo_image') or {}).get('uri')
-        if image:
-            parts.append(f"<img referrerpolicy='no-referrer' src='{clean_xml(image)}'>")
+        for uri in _marketplace_photo_uris(listing):
+            parts.append(f"<img referrerpolicy='no-referrer' src='{clean_xml(uri)}'>")
+
+        body = _marketplace_description(listing)
+        if body:
+            parts.append(clean_xml(body).replace('\n', '<br>'))
 
         seller = (listing.get('marketplace_listing_seller') or {}).get('name') or ''
 

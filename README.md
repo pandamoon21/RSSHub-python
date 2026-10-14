@@ -198,16 +198,16 @@ Use the bundled helper to convert an export:
 
 ```bash
 # From a JSON export (EditThisCookie, Cookie-Editor, devtools)
-python fb_cookie_from_export.py fb_cookies.json
+python scripts/fb_cookie_from_export.py fb_cookies.json
 
 # From a Netscape cookies.txt (curl / yt-dlp format)
-python fb_cookie_from_export.py cookies.txt
+python scripts/fb_cookie_from_export.py cookies.txt
 
 # Value only, for scripting
-python fb_cookie_from_export.py fb_cookies.json --quiet
+python scripts/fb_cookie_from_export.py fb_cookies.json --quiet
 
 # Or pipe it in
-cat fb_cookies.json | python fb_cookie_from_export.py -
+cat fb_cookies.json | python scripts/fb_cookie_from_export.py -
 ```
 
 It prints the value on stdout and a summary on stderr:

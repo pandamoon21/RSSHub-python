@@ -7,10 +7,10 @@ Cookie header form, which is just the ``name=value`` pairs joined by ``"; "``.
 
 Usage
 -----
-    python fb_cookie_from_export.py fb_cookies.json
-    python fb_cookie_from_export.py fb_cookies.json --all
-    python fb_cookie_from_export.py cookies.txt
-    cat fb_cookies.json | python fb_cookie_from_export.py -
+    python scripts/fb_cookie_from_export.py fb_cookies.json
+    python scripts/fb_cookie_from_export.py fb_cookies.json --all
+    python scripts/fb_cookie_from_export.py cookies.txt
+    cat fb_cookies.json | python scripts/fb_cookie_from_export.py -
 
 The result is printed to stdout, ready to paste into a hosting provider's environment
 variable field (Vercel, Docker, Fly, etc.). Nothing is written to disk and no network

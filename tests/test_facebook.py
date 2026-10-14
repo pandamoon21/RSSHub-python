@@ -616,7 +616,7 @@ class CookieExportScriptTests(unittest.TestCase):
     """The helper that turns a browser cookie export into FACEBOOK_COOKIE."""
 
     def setUp(self):
-        import fb_cookie_from_export as m
+        from scripts import fb_cookie_from_export as m
         self.m = m
 
     def test_json_array_export(self):

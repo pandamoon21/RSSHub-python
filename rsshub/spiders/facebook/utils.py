@@ -21,7 +21,15 @@ import threading
 import time
 from datetime import datetime, timezone
 
-from curl_cffi import requests as curl_requests
+# curl_cffi is only in requirements.txt (full install). The Vercel/lite manifest omits
+# it, so follow the project convention for optional deps: import defensively and gate
+# on a HAS_* flag, so a lite deployment returns a clear 503 instead of a 500 traceback.
+try:
+    from curl_cffi import requests as curl_requests
+    HAS_CURL_CFFI = True
+except ImportError:  # pragma: no cover - depends on the install profile
+    curl_requests = None
+    HAS_CURL_CFFI = False
 
 BASE_URL = 'https://www.facebook.com'
 GRAPHQL_URL = f'{BASE_URL}/api/graphql/'
@@ -110,6 +118,15 @@ class FacebookNotFound(RuntimeError):
     """Raised when a page/group/profile identifier cannot be resolved.
 
     A client error (HTTP 404), not a retryable upstream failure.
+    """
+
+
+class FacebookUnavailable(FacebookRateLimited):
+    """Raised when this deployment cannot serve Facebook feeds at all.
+
+    Currently means curl_cffi is missing (Vercel/lite install). Distinct from a
+    rate limit so the message tells the operator what to install rather than
+    suggesting they re-export a cookie.
     """
 
 
@@ -476,7 +493,19 @@ def extract_tokens(html):
 
 
 def feed_requires_cookie():
-    """Raise unless a FACEBOOK_COOKIE is configured."""
+    """Raise unless this deployment can actually talk to Facebook.
+
+    Checked in order of what an operator can act on: first whether the required
+    dependency is installed at all, then whether a session is supplied.
+    """
+    if not HAS_CURL_CFFI:
+        raise FacebookUnavailable(
+            'curl_cffi is not installed, so Facebook feeds are unavailable in this '
+            'deployment. Vercel/lite installs use requirements-lite.txt, which omits '
+            'curl_cffi because Facebook rejects ordinary HTTP clients on TLS fingerprint. '
+            'Options: install curl-cffi in the lite manifest, or run the full install '
+            '(requirements.txt) on a host that can execute it.'
+        )
     if not get_cookie():
         raise FacebookSessionExpired(
             'FACEBOOK_COOKIE is not set. Facebook requires an authenticated session for '

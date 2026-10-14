@@ -456,6 +456,42 @@ class SessionCacheTests(unittest.TestCase):
             u.reset_sessions()
 
 
+class LiteModeTests(FacebookTestBase):
+    """Vercel/lite installs omit curl_cffi; that must degrade cleanly, not 500."""
+
+    def test_unavailable_maps_to_503_with_an_actionable_message(self):
+        client = self.app.test_client()
+        with mock.patch.object(u, 'HAS_CURL_CFFI', False):
+            resp = client.get('/facebook/page/4')
+        self.assertEqual(resp.status_code, 503)
+        self.assertNotIn(b'Traceback', resp.data)
+        body = resp.data.decode()
+        self.assertIn('curl_cffi', body)
+        self.assertIn('requirements-lite.txt', body)
+
+    def test_unavailable_is_distinguishable_from_missing_cookie(self):
+        with mock.patch.object(u, 'HAS_CURL_CFFI', False), \
+             mock.patch.object(u, 'get_cookie', return_value=None):
+            # Dependency check comes first: the operator must install before configuring.
+            with self.assertRaises(u.FacebookUnavailable):
+                u.feed_requires_cookie()
+
+    def test_cookie_error_raised_once_dependency_present(self):
+        with mock.patch.object(u, 'HAS_CURL_CFFI', True), \
+             mock.patch.object(u, 'get_cookie', return_value=None):
+            with self.assertRaises(u.FacebookSessionExpired):
+                u.feed_requires_cookie()
+
+    def test_all_facebook_routes_degrade_without_curl_cffi(self):
+        client = self.app.test_client()
+        with mock.patch.object(u, 'HAS_CURL_CFFI', False):
+            for path in ['/facebook/page/4', '/facebook/group/1',
+                         '/facebook/marketplace/iphone']:
+                resp = client.get(path)
+                self.assertEqual(resp.status_code, 503, path)
+                self.assertNotIn(b'Traceback', resp.data, path)
+
+
 class RouteTests(FacebookTestBase):
     def test_routes_registered(self):
         rules = {str(r) for r in self.app.url_map.iter_rules()}

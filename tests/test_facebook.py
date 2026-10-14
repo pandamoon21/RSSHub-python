@@ -495,6 +495,161 @@ class MarketplaceExtractionTests(unittest.TestCase):
         self.assertNotIn('Nike P-6000', titles)
 
 
+class DetailEnrichmentTests(unittest.TestCase):
+    """?details=1 fills in the description and gallery from each item's own page."""
+
+    ITEM_HTML = (
+        '{"marketplace_listing_description":"Harga net\\nHealth 100\\nCod surabaya",'
+        '"listing_photos":[{"image":{"uri":"https://i/1.jpg"}},'
+        '{"image":{"uri":"https://i/2.jpg"}}]}'
+    )
+
+    def _listing(self, **over):
+        base = {
+            'id': '123',
+            'marketplace_listing_title': 'Ssd sata 2tb PNY',
+            'listing_price': {'formatted_amount': 'Rp1.500.000'},
+            'primary_listing_photo': {'image': {'uri': 'https://i/cover.jpg'}},
+            'marketplace_listing_seller': {'name': 'Krisna'},
+            'creation_time': 1700000000,
+        }
+        base.update(over)
+        return base
+
+    def _run(self, listings, item_html=None, status=200, concurrency=None, raise_get=False):
+        """Drive enrich_listings_with_details against a fake AsyncSession."""
+        calls = []
+
+        class FakeAsyncResponse:
+            def __init__(self):
+                self.status_code = status
+                self.text = self_html if self_html is not None else ''
+
+        class FakeAsyncSession:
+            def __init__(self, *a, **kw):
+                self.headers = {}
+
+            async def get(self, url, **kw):
+                calls.append(url)
+                if raise_get:
+                    raise TimeoutError('nope')
+                return FakeAsyncResponse()
+
+            async def close(self):
+                pass
+
+        self_html = item_html
+        kwargs = {'concurrency': concurrency} if concurrency is not None else {}
+        with mock.patch.object(u, 'curl_requests') as cr, \
+             mock.patch.object(u, 'get_cookie', return_value='c_user=1; xs=2'):
+            cr.AsyncSession = FakeAsyncSession
+            out = u.enrich_listings_with_details(listings, **kwargs)
+        return out, calls
+
+    def test_details_add_description_and_full_gallery(self):
+        listings = [self._listing()]
+        out, calls = self._run(listings, item_html=self.ITEM_HTML)
+        self.assertEqual(len(calls), 1)
+        self.assertIn('/marketplace/item/123/', calls[0])
+        item = u.marketplace_to_items(out)[0]
+        self.assertIn('Harga net', item['description'])
+        self.assertIn('Cod surabaya', item['description'])
+        # Cover from the search node plus both gallery photos from the item page.
+        self.assertEqual(item['description'].count('<img'), 3)
+
+    def test_details_url_has_no_double_slash(self):
+        _, calls = self._run([self._listing()], item_html=self.ITEM_HTML)
+        self.assertNotIn('com//marketplace', calls[0])
+
+    def test_details_is_skipped_when_already_present(self):
+        """A search node that already carries the body must not be overwritten."""
+        listing = self._listing(marketplace_listing_description='search-page body')
+        out, _ = self._run([listing], item_html=self.ITEM_HTML)
+        self.assertEqual(out[0]['marketplace_listing_description'], 'search-page body')
+
+    def test_detail_fetch_failure_degrades(self):
+        """One item's failure must not raise or empty the feed."""
+        listings = [self._listing()]
+        out, _ = self._run(listings, raise_get=True)
+        self.assertEqual(len(out), 1)
+        self.assertTrue(out[0]['marketplace_listing_title'])
+
+    def test_non_200_detail_page_degrades(self):
+        out, _ = self._run([self._listing()], item_html=self.ITEM_HTML, status=500)
+        self.assertNotIn('_detail_photos', out[0])
+
+    def test_empty_listing_list_is_a_noop(self):
+        out, calls = self._run([], item_html=self.ITEM_HTML)
+        self.assertEqual(out, [])
+        self.assertEqual(calls, [])
+
+    def test_concurrency_is_clamped(self):
+        """?concurrency=1000 must not be forwarded upstream."""
+        import asyncio
+        captured = {}
+        real_semaphore = u.asyncio.Semaphore
+
+        def spy(value):
+            captured['value'] = value
+            return real_semaphore(value)
+
+        class FakeAsyncSession:
+            def __init__(self, *a, **kw):
+                self.headers = {}
+
+            async def get(self, url, **kw):
+                return type('R', (), {'status_code': 200, 'text': '{}'})()
+
+            async def close(self):
+                pass
+
+        with mock.patch.object(u, 'curl_requests') as cr, \
+             mock.patch.object(u, 'get_cookie', return_value='c_user=1; xs=2'), \
+             mock.patch.object(u.asyncio, 'Semaphore', spy):
+            cr.AsyncSession = FakeAsyncSession
+            asyncio.run(u._enrich_marketplace_listings(
+                [self._listing()], 'c_user=1; xs=2', 1000))
+        self.assertEqual(captured['value'], u.MAX_DETAIL_CONCURRENCY)
+
+    def test_concurrency_floor_is_one(self):
+        import asyncio
+        captured = {}
+        real_semaphore = u.asyncio.Semaphore
+
+        def spy(value):
+            captured['value'] = value
+            return real_semaphore(value)
+
+        class FakeAsyncSession:
+            def __init__(self, *a, **kw):
+                self.headers = {}
+
+            async def get(self, url, **kw):
+                return type('R', (), {'status_code': 200, 'text': '{}'})()
+
+            async def close(self):
+                pass
+
+        with mock.patch.object(u, 'curl_requests') as cr, \
+             mock.patch.object(u, 'get_cookie', return_value='c_user=1; xs=2'), \
+             mock.patch.object(u.asyncio, 'Semaphore', spy):
+            cr.AsyncSession = FakeAsyncSession
+            asyncio.run(u._enrich_marketplace_listings(
+                [self._listing()], 'c_user=1; xs=2', 0))
+        self.assertEqual(captured['value'], 1)
+
+    def test_detail_description_extraction_shapes(self):
+        cases = [
+            ('{"marketplace_listing_description":"plain"}', 'plain'),
+            ('{"marketplace_listing_description":{"text":"nested"}}', 'nested'),
+            ('{"redacted_description":{"text":"redacted"}}', 'redacted'),
+        ]
+        for html, expected in cases:
+            self.assertEqual(u._marketplace_item_description(html), expected, html)
+
+    def test_detail_description_absent_returns_none(self):
+        self.assertIsNone(u._marketplace_item_description('{"other":1}'))
+
 class SessionCacheTests(unittest.TestCase):
     def test_sessions_are_reused_per_cookie(self):
         """One session per cookie: the factory must run twice, not once per call."""

@@ -143,6 +143,31 @@ Marketplace accepts two extra query parameters, matching Facebook's own filters:
   region. See the list below.
 - `days` — only listings posted within this many days.
 - `limit` — how many items, default 21, maximum 100.
+- `details` — fetch each listing's own page for the seller's description and full photo
+  gallery. See below. Off by default.
+- `concurrency` — parallel detail requests when `details` is on, default 5, maximum 10.
+
+##### Why `?details=1` exists
+
+The **search** page only carries a lightweight card per listing: title, price, city, seller
+and a single cover photo. The seller's description and the rest of the photo gallery live on
+the **item** page, which the search route never touches — so without `details` those two
+things cannot appear in the feed. That is a limit of the data Facebook embeds in search
+results, not a parsing bug.
+
+```bash
+# Description + every photo, for the first 5 listings
+/facebook/marketplace/ssd?days=1&limit=5&details=1
+
+# Same, but 8 detail requests in flight
+/facebook/marketplace/ssd?limit=10&details=1&concurrency=8
+```
+
+It costs **one extra request per listing**, issued concurrently (using `curl_cffi`'s
+`AsyncSession`, so the Chrome TLS fingerprint is preserved). Because Marketplace rate-limits
+hard, keep `limit` low when using it — `details=1` with the default `limit=21` means 22
+requests per cache miss. Enrichment is best-effort: if an item page fails, that listing keeps
+its search-page fields rather than breaking the feed.
 
 ##### `location` slugs
 

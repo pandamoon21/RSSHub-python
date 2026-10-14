@@ -10,22 +10,32 @@ the account's own Marketplace region.
 """
 from rsshub.spiders.facebook.utils import (
     BASE_URL,
+    DEFAULT_DETAIL_CONCURRENCY,
+    enrich_listings_with_details,
     fetch_marketplace_listings,
     get_route_limit,
     marketplace_to_items,
 )
 
 
-def ctx(query='', limit=None, location=None, days=None):
+def ctx(query='', limit=None, location=None, days=None, details=False,
+        concurrency=DEFAULT_DETAIL_CONCURRENCY):
     """Return the feed dict for /facebook/marketplace/:query.
 
     `location` is a Marketplace city slug (e.g. ``yogyakartacity``); `days` filters to
     listings posted within that many days.
+
+    `details` fetches each listing's own page for the seller's description and the full
+    photo gallery. The search page only carries a lightweight card (price, city, cover
+    photo), so those fields are otherwise unavailable. Costs one extra request per
+    listing, issued concurrently (`concurrency`, capped by MAX_DETAIL_CONCURRENCY).
     """
     count = get_route_limit(limit)
     query = (query or '').strip()
 
     listings = fetch_marketplace_listings(query, limit=count, location=location, days=days)
+    if details:
+        enrich_listings_with_details(listings, concurrency=concurrency)
     items = marketplace_to_items(listings)
 
     title = f'Facebook Marketplace: {query}'

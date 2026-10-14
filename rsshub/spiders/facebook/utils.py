@@ -14,6 +14,7 @@ GraphQL Graph API. That means:
 Facebook also rate-limits aggressively. When a query is declined, this module raises
 ``FacebookRateLimited``, which the routes translate into HTTP 503.
 """
+import asyncio
 import json
 import os
 import re
@@ -92,6 +93,12 @@ MAX_LIMIT = 100
 # Retry policy for transient network faults (never for a definitive rejection).
 MAX_ATTEMPTS = 3
 RETRY_BACKOFF = 1.5
+
+# Listing detail pages (?details=1) cost one request per item, run concurrently. Kept
+# low on purpose: Marketplace rate-limits hard, and the search page already spent one
+# request. Also caps what a caller can raise with ?concurrency=.
+DEFAULT_DETAIL_CONCURRENCY = 5
+MAX_DETAIL_CONCURRENCY = 10
 
 # XML 1.0 forbids most C0 control characters outright. A single one makes the whole feed
 # unparseable, so they are stripped from every string injected into atom.xml.
@@ -957,6 +964,106 @@ def fetch_marketplace_listings(query, limit=DEFAULT_LIMIT, location=None, days=N
     return listings
 
 
+def _marketplace_item_description(html):
+    """Extract the description text from an item detail page, or None.
+
+    Detail pages are server-rendered React, so the body is embedded in the same JSON
+    blobs the search page uses. Preferred key first; the other shapes cover the
+    logged-out and "redacted" variants.
+    """
+    for key in ('marketplace_listing_description', 'redacted_description'):
+        for obj in _iter_json_objects_containing(html, f'"{key}"'):
+            value = obj.get(key)
+            if isinstance(value, str) and value.strip():
+                return value
+            if isinstance(value, dict):
+                text = value.get('text')
+                if isinstance(text, str) and text.strip():
+                    return text
+    return None
+
+async def _fetch_marketplace_item_details(session, listing_id, semaphore):
+    """Fetch one item page and return its (description, [photo uris]).
+
+    Concurrency is bounded by `semaphore`; failures degrade to (None, []) so one bad
+    item cannot empty the whole feed.
+    """
+    url = f'{BASE_URL}/marketplace/item/{listing_id}/'
+    async with semaphore:
+        try:
+            page = await session.get(url, timeout=REQUEST_TIMEOUT)
+        except Exception:
+            return None, []
+    if page.status_code != 200:
+        return None, []
+
+    html = page.text
+    detail = {
+        'id': listing_id,
+        'marketplace_listing_description': _marketplace_item_description(html),
+    }
+    # The detail page carries the gallery in the same key the search page may omit.
+    for obj in _iter_json_objects_containing(html, '"listing_photos"'):
+        photos = obj.get('listing_photos')
+        if photos:
+            detail['listing_photos'] = photos
+            break
+    return detail.get('marketplace_listing_description'), _marketplace_photo_uris(detail)
+
+async def _enrich_marketplace_listings(listings, cookie, concurrency):
+    """Fill in description and gallery for each listing from its detail page.
+
+    Returns {listing_id: (description, [photo uris])}. Uses curl_cffi's AsyncSession so
+    the Chrome TLS fingerprint is preserved — Facebook rejects other clients — while the
+    per-item requests run concurrently instead of N sequential round trips.
+    """
+    concurrency = max(1, min(int(concurrency), MAX_DETAIL_CONCURRENCY))
+    semaphore = asyncio.Semaphore(concurrency)
+    session = curl_requests.AsyncSession(impersonate=IMPERSONATE)
+    session.headers.update({'cookie': cookie} if cookie else {})
+    try:
+        results = await asyncio.gather(*(
+            _fetch_marketplace_item_details(session, listing.get('id'), semaphore)
+            for listing in listings if isinstance(listing, dict) and listing.get('id')
+        ))
+    finally:
+        await session.close()
+
+    ids = [listing.get('id') for listing in listings
+           if isinstance(listing, dict) and listing.get('id')]
+    return dict(zip(ids, results))
+
+def enrich_listings_with_details(listings, concurrency=DEFAULT_DETAIL_CONCURRENCY):
+    """Blocking bridge: run the async detail fetch from the synchronous spider contract.
+
+    ctx() is called by Flask synchronously, so asyncio.run() is used the same way the
+    Tokopedia spider does. Enrichment is best-effort: on any transport-level failure the
+    listings are returned untouched rather than failing the whole feed.
+    """
+    if not listings:
+        return listings
+    if not concurrency:
+        # The route passes concurrency=None when ?concurrency= is absent.
+        concurrency = DEFAULT_DETAIL_CONCURRENCY
+    cookie = get_cookie()
+    try:
+        details = asyncio.run(_enrich_marketplace_listings(listings, cookie, concurrency))
+    except Exception:
+        return listings
+
+    for listing in listings:
+        if not isinstance(listing, dict):
+            continue
+        detail = details.get(listing.get('id'))
+        if not detail:
+            continue
+        description, photos = detail
+        if description and not _marketplace_description(listing):
+            listing['marketplace_listing_description'] = description
+        if photos and not listing.get('listing_photos'):
+            listing['_detail_photos'] = photos
+    return listings
+
 def _marketplace_photo_uris(listing):
     """Return the listing's photo URIs in order, primary first, de-duplicated.
 
@@ -979,6 +1086,13 @@ def _marketplace_photo_uris(listing):
         add((photo.get('photo_image') or {}).get('uri'))
 
     pick(listing.get('primary_listing_photo'))
+    # _detail_photos is the URI list already resolved from the item page (see
+    # enrich_listings_with_details); it supersedes whatever the search node carried.
+    photos = listing.get('_detail_photos')
+    if photos:
+        for uri in photos:
+            add(uri)
+        return uris
     photos = listing.get('listing_photos')
     if isinstance(photos, dict):
         photos = photos.get('nodes') or photos.get('edges') or []

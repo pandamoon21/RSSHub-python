@@ -311,6 +311,12 @@ def fitgirl_feed():
     from rsshub.spiders.fitgirl.feed import ctx
     return render_template('main/atom.xml', **filter_content(ctx()))
 
+def _truthy(value):
+    """Interpret a query-string flag. Absent means off; ?x= and ?x=1 are both on."""
+    if value is None:
+        return False
+    return value.strip().lower() not in ('', '0', 'false', 'no', 'off')
+
 def _facebook_feed(build_ctx, **params):
     """Render a Facebook feed, mapping upstream failures onto honest HTTP statuses.
 
@@ -353,7 +359,12 @@ def facebook_marketplace(query=''):
     from rsshub.spiders.facebook.marketplace import ctx
     location = request.args.get('location', default='', type=str) or None
     days = request.args.get('days', type=int)
-    return _facebook_feed(ctx, query=query, location=location, days=days)
+    # ?details=1 costs one extra request per listing, so make it opt-in and let the
+    # spider clamp the concurrency.
+    details = _truthy(request.args.get('details'))
+    concurrency = request.args.get('concurrency', type=int)
+    return _facebook_feed(ctx, query=query, location=location, days=days,
+                          details=details, concurrency=concurrency)
 
 
 @bp.route('/facebook/marketplace/seller/<string:seller_id>')
@@ -361,7 +372,10 @@ def facebook_marketplace(query=''):
 @swr_cache(timeout=1800)
 def facebook_marketplace_seller(seller_id=''):
     from rsshub.spiders.facebook.seller import ctx
-    return _facebook_feed(ctx, seller_id=seller_id)
+    details = _truthy(request.args.get('details'))
+    concurrency = request.args.get('concurrency', type=int)
+    return _facebook_feed(ctx, seller_id=seller_id, details=details,
+                          concurrency=concurrency)
 
 
 @bp.route('/facebook/group/<string:id>/user/<string:user_id>')

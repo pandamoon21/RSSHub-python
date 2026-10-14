@@ -1951,8 +1951,11 @@
         <p class="card-text">Indonesia slugs: <code>jakarta</code>, <code>surabaya</code>, <code>bandung</code>, <code>medan</code>, <code>semarang</code>, <code>makassar</code>, <code>palembang</code>, <code>denpasar</code>, <code>tangerang</code>, <code>bekasi</code>, <code>manado</code>, <code>bandarlampung</code>, <code>batam</code>, <code>jambi</code>, <code>balikpapan</code>, <code>samarinda</code>, <code>pontianak</code>, <code>sidoarjo</code>, <code>bogor</code>, <code>malang</code>, <code>padang</code>, <code>pekanbaru</code>, <code>yogyakartacity</code>.</p>
         <p class="card-text">Parameter: <code>days</code> Optional recency filter: only listings posted within this many days, e.g. <code>1</code>.</p>
         <p class="card-text">Parameter: <code>limit</code> Optional number of listings, defaults to 21 (maximum 100).</p>
+        <p class="card-text">Parameter: <code>details</code> Optional. Set to <code>1</code> to also fetch each listing's own page, adding the seller's description and the full photo gallery. The search page only carries price, city, cover photo and seller, so those two fields are missing without it.</p>
+        <p class="card-text">Parameter: <code>concurrency</code> Optional, only with <code>details</code>. Parallel detail requests, defaults to 5 (maximum 10). Costs one extra request per listing — keep <code>limit</code> low.</p>
         <p class="card-text">Example with filters: <a href="https://rss-panda1.vercel.app/facebook/marketplace/ssd?location=yogyakartacity&amp;days=1" target="_blank">/facebook/marketplace/ssd?location=yogyakartacity&amp;days=1</a></p>
-        <p class="card-text">Returns title, formatted price, city and photo for each listing. Results are filtered to titles matching the query, so an unrelated query returns an empty feed rather than Facebook's placeholder listings.</p>
+        <p class="card-text">Example with details: <a href="https://rss-panda1.vercel.app/facebook/marketplace/ssd?days=1&amp;limit=5&amp;details=1" target="_blank">/facebook/marketplace/ssd?days=1&amp;limit=5&amp;details=1</a></p>
+        <p class="card-text">Returns title, formatted price, city and photo for each listing. Add <code>details=1</code> for the seller's description and full gallery. Results are filtered to titles matching the query, so an unrelated query returns an empty feed rather than Facebook's placeholder listings.</p>
         <p class="card-text"><span class="badge badge-warning">Login required</span> <code>FACEBOOK_COOKIE</code> is required. Without <code>location</code>, results are scoped to the account's own Marketplace region.</p>
         <p class="card-text"><strong>Note:</strong> Marketplace has no stable public API — listings are read from JSON embedded in the search page. If Facebook changes that page, this feed needs updating.</p>
     </div>
@@ -1969,6 +1972,7 @@
         <p class="card-text">Route：<code>/facebook/marketplace/seller/:seller_id</code></p>
         <p class="card-text">Parameter: <code>seller_id</code> Numeric seller ID from a seller URL such as <code>facebook.com/marketplace/profile/<strong>&lt;seller_id&gt;</strong>/</code>.</p>
         <p class="card-text">Parameter: <code>limit</code> Optional number of listings, defaults to 21 (maximum 100).</p>
+        <p class="card-text">Parameter: <code>details</code> Optional. Set to <code>1</code> to fetch each listing's own page for its description and full photo gallery.</p>
         <p class="card-text">Lists a single seller's active listings. <code>FACEBOOK_COOKIE</code> is required.</p>
     </div>
 </div>

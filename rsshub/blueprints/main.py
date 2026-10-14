@@ -346,7 +346,23 @@ def facebook_group(id=''):
 @swr_cache(timeout=1800)  # Marketplace is login-walled and slow; serve stale on upstream failure
 def facebook_marketplace(query=''):
     from rsshub.spiders.facebook.marketplace import ctx
-    return _facebook_feed(ctx, query=query)
+    location = request.args.get('location', default='', type=str) or None
+    days = request.args.get('days', type=int)
+    return _facebook_feed(ctx, query=query, location=location, days=days)
+
+
+@bp.route('/facebook/marketplace/seller/<string:seller_id>')
+@swr_cache(timeout=1800)
+def facebook_marketplace_seller(seller_id=''):
+    from rsshub.spiders.facebook.seller import ctx
+    return _facebook_feed(ctx, seller_id=seller_id)
+
+
+@bp.route('/facebook/group/<string:id>/user/<string:user_id>')
+@swr_cache(timeout=1800)  # Facebook rate-limits hard; serve stale rather than fail on a blip
+def facebook_group_user(id='', user_id=''):
+    from rsshub.spiders.facebook.groupmember import ctx
+    return _facebook_feed(ctx, id=id, user_id=user_id)
 
 
 @bp.route('/filter/')

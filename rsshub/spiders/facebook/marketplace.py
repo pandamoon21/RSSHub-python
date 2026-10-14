@@ -16,17 +16,31 @@ from rsshub.spiders.facebook.utils import (
 )
 
 
-def ctx(query='', limit=None):
-    """Return the feed dict for /facebook/marketplace/:query."""
+def ctx(query='', limit=None, location=None, days=None):
+    """Return the feed dict for /facebook/marketplace/:query.
+
+    `location` is a Marketplace city slug (e.g. ``yogyakartacity``); `days` filters to
+    listings posted within that many days.
+    """
     count = get_route_limit(limit)
     query = (query or '').strip()
 
-    listings = fetch_marketplace_listings(query, limit=count)
+    listings = fetch_marketplace_listings(query, limit=count, location=location, days=days)
     items = marketplace_to_items(listings)
 
+    title = f'Facebook Marketplace: {query}'
+    if location:
+        title += f' ({location})'
+    if days:
+        title += f' — last {days}d'
+
+    link = f'{BASE_URL}/marketplace/search/?query={query}'
+    if location:
+        link = f'{BASE_URL}/marketplace/{location}/search?query={query}'
+
     return {
-        'title': f'Facebook Marketplace: {query}',
-        'link': f'{BASE_URL}/marketplace/search/?query={query}',
+        'title': title,
+        'link': link,
         'description': f'Facebook Marketplace listings matching "{query}"',
         'author': 'Facebook Marketplace',
         'items': items,

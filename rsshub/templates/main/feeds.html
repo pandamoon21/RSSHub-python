@@ -1945,10 +1945,44 @@
         <p class="card-text">Example：<a href="https://rss-panda1.vercel.app/facebook/marketplace/iphone" target="_blank">https://rss-panda1.vercel.app/facebook/marketplace/iphone</a></p>
         <p class="card-text">Route：<code>/facebook/marketplace/:query</code></p>
         <p class="card-text">Parameter: <code>query</code> Search terms, e.g. <code>iphone</code>, <code>honda jazz</code>.</p>
+        <p class="card-text">Parameter: <code>location</code> Optional Marketplace city slug, e.g. <code>yogyakartacity</code>.</p>
+        <p class="card-text">Parameter: <code>days</code> Optional recency filter: only listings posted within this many days, e.g. <code>1</code>.</p>
         <p class="card-text">Parameter: <code>limit</code> Optional number of listings, defaults to 21 (maximum 100).</p>
+        <p class="card-text">Example with filters: <a href="https://rss-panda1.vercel.app/facebook/marketplace/ssd?location=yogyakartacity&amp;days=1" target="_blank">/facebook/marketplace/ssd?location=yogyakartacity&amp;days=1</a></p>
         <p class="card-text">Returns title, formatted price, city and photo for each listing. Results are filtered to titles matching the query, so an unrelated query returns an empty feed rather than Facebook's placeholder listings.</p>
-        <p class="card-text"><span class="badge badge-warning">Login required</span> <code>FACEBOOK_COOKIE</code> is required. Results are scoped to the account's own Marketplace region, so a query for another country needs an account or proxy from that region.</p>
+        <p class="card-text"><span class="badge badge-warning">Login required</span> <code>FACEBOOK_COOKIE</code> is required. Without <code>location</code>, results are scoped to the account's own Marketplace region.</p>
         <p class="card-text"><strong>Note:</strong> Marketplace has no stable public API — listings are read from JSON embedded in the search page. If Facebook changes that page, this feed needs updating.</p>
+    </div>
+</div>
+<br>
+<!--item info end-->
+
+<!--item info start-->
+<div class="card text-left">
+    <div class="card-body">
+        <h4 class="card-title">Facebook Marketplace Seller</h4>
+        <h6 class="text-muted">Facebook Marketplace Seller <span class="badge badge-warning">login required</span></h6>
+        <p class="card-text">Example：<a href="https://rss-panda1.vercel.app/facebook/marketplace/seller/100072517471885" target="_blank">https://rss-panda1.vercel.app/facebook/marketplace/seller/100072517471885</a></p>
+        <p class="card-text">Route：<code>/facebook/marketplace/seller/:seller_id</code></p>
+        <p class="card-text">Parameter: <code>seller_id</code> Numeric seller ID from a seller URL such as <code>facebook.com/marketplace/profile/<strong>100072517471885</strong>/</code>.</p>
+        <p class="card-text">Parameter: <code>limit</code> Optional number of listings, defaults to 21 (maximum 100).</p>
+        <p class="card-text">Lists a single seller's active listings. <code>FACEBOOK_COOKIE</code> is required.</p>
+    </div>
+</div>
+<br>
+<!--item info end-->
+
+<!--item info start-->
+<div class="card text-left">
+    <div class="card-body">
+        <h4 class="card-title">Facebook Group Member Posts</h4>
+        <h6 class="text-muted">Facebook Group Member Posts <span class="badge badge-warning">login required</span></h6>
+        <p class="card-text">Example：<a href="https://rss-panda1.vercel.app/facebook/group/586220791393074/user/100090130956973" target="_blank">https://rss-panda1.vercel.app/facebook/group/586220791393074/user/100090130956973</a></p>
+        <p class="card-text">Route：<code>/facebook/group/:id/user/:user_id</code></p>
+        <p class="card-text">Parameter: <code>id</code> Group ID or group username.</p>
+        <p class="card-text">Parameter: <code>user_id</code> Numeric member ID from a URL such as <code>facebook.com/groups/586220791393074/user/<strong>100090130956973</strong>/</code>.</p>
+        <p class="card-text">Parameter: <code>limit</code> Optional number of posts, defaults to 21 (maximum 100).</p>
+        <p class="card-text">All posts by one member inside a group. <code>FACEBOOK_COOKIE</code> is required, and the account must already be able to see the group.</p>
     </div>
 </div>
 <br>

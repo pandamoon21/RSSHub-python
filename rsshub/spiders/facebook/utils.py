@@ -353,7 +353,12 @@ def render_rich_block(block):
 
 
 def render_story(story):
-    """Render a story into {'text': plain text or None, 'html': full HTML}."""
+    """Render a story into {'text': plain text or None, 'html': full HTML}.
+
+    Handles both shapes Facebook uses. The GraphQL feed nests content under
+    ``comet_sections.content.story``; the JSON embedded in a page (e.g. a group member
+    view) puts ``message`` and ``attachments`` at the top level.
+    """
     section = story.get('comet_sections', {}).get('message') or {}
     message = section.get('story', {}).get('message') or story.get('message')
 
@@ -365,11 +370,13 @@ def render_story(story):
     else:
         text_html = ''
 
-    attachments = ''.join(
-        render_attachment((att.get('styles') or {}).get('attachment'))
-        for att in story.get('attachments') or []
-    )
-    return {'text': (message or {}).get('text'), 'html': text_html + attachments}
+    # Attachments: nested shape carries styles.attachment, flat shape is a plain list.
+    attachments = []
+    for att in story.get('attachments') or []:
+        styles = (att.get('styles') or {}).get('attachment') if isinstance(att, dict) else None
+        attachments.append(render_attachment(styles if styles is not None else att))
+
+    return {'text': (message or {}).get('text'), 'html': text_html + ''.join(attachments)}
 
 
 # ---------------------------------------------------------------- traversal
@@ -694,7 +701,7 @@ def stories_to_items(stories):
     """
     items = []
     for node in stories:
-        story = (node.get('comet_sections') or {}).get('content', {}).get('story') or {}
+        story = (node.get('comet_sections') or {}).get('content', {}).get('story') or node
         own = render_story(story)
         attached = story.get('attached_story')
         shared = render_story(attached) if attached else None
@@ -702,10 +709,13 @@ def stories_to_items(stories):
         actors = node.get('actors') or [{}]
         author = actors[0].get('name') or ''
 
+        # GraphQL uses permalink_url; the flat page-embedded shape uses url.
+        link = node.get('permalink_url') or node.get('url') or story.get('url') or ''
+
         items.append({
             'title': clean_xml(own.get('text') or (shared or {}).get('text') or author),
             'description': clean_xml(own.get('html', '') + ((shared or {}).get('html') or '')),
-            'link': node.get('permalink_url', '') or '',
+            'link': link,
             'pubDate': parse_timestamp(node.get('creation_time')),
             'author': clean_xml(author),
         })
@@ -729,8 +739,17 @@ def resolve_group_id(group):
 
 
 def resolve_page_id(page):
-    """Resolve a page/profile username to its numeric ID via the plugins page."""
+    """Resolve a page or profile username to its numeric ID.
+
+    Pages resolve through the public plugin endpoint. Personal profiles do not: they are
+    not Pages, so plugins/page.php returns nothing for them (a dotted slug like
+    ``mirzum.habibi.2025`` fails there outright). For those, read ``userID`` from the
+    profile HTML instead.
+
+    Beware ``profile_id`` in that HTML — it is the *viewer's* id, not the target's.
+    """
     session = _get_session(get_cookie())
+
     res = _request_with_retry(
         session,
         'get',
@@ -742,9 +761,18 @@ def resolve_page_id(page):
         re.search(r'initializeClickLoggers",\[[^\]]*\],\[false,"(\d+)"', res.text)
         or re.search(r'"pageID":"(\d+)"', res.text)
     )
-    if not match:
-        raise FacebookNotFound(f'Facebook page or profile {page!r} not found.')
-    return match.group(1)
+    if match:
+        return match.group(1)
+
+    # Fall back to the profile page, which carries the owner's id as `userID`.
+    profile = _request_with_retry(
+        session, 'get', f'{BASE_URL}/{page}', timeout=REQUEST_TIMEOUT
+    )
+    match = re.search(r'"userID":"(\d+)"', profile.text)
+    if match:
+        return match.group(1)
+
+    raise FacebookNotFound(f'Facebook page or profile {page!r} not found.')
 
 # ---------------------------------------------------------------- marketplace
 
@@ -789,8 +817,12 @@ def _iter_json_objects_containing(text, needle):
             continue
 
 
-def fetch_marketplace_listings(query, limit=DEFAULT_LIMIT, location=None):
+def fetch_marketplace_listings(query, limit=DEFAULT_LIMIT, location=None, days=None):
     """Scrape Marketplace search results for `query`.
+
+    `location` is a Marketplace city slug (e.g. ``yogyakartacity``) and `days` maps to
+    Facebook's ``daysSinceListed`` filter. Both are optional; without them the search
+    uses the account's own region and no recency filter.
 
     Returns a list of raw listing dicts. Raises FacebookSessionExpired when no cookie is
     configured and FacebookRateLimited when the search page cannot be loaded.
@@ -801,10 +833,18 @@ def fetch_marketplace_listings(query, limit=DEFAULT_LIMIT, location=None):
 
     feed_requires_cookie()
     session = _get_session(get_cookie())
-    url = f'{BASE_URL}/marketplace/search/'
+
+    if location:
+        url = f'{BASE_URL}/marketplace/{location}/search'
+    else:
+        url = f'{BASE_URL}/marketplace/search/'
+
+    params = {'query': query, 'exact': 'false'}
+    if days:
+        params['daysSinceListed'] = days
 
     page = _request_with_retry(
-        session, 'get', url, params={'query': query}, timeout=REQUEST_TIMEOUT
+        session, 'get', url, params=params, timeout=REQUEST_TIMEOUT
     )
     if page.status_code != 200:
         raise FacebookRateLimited(
@@ -888,3 +928,121 @@ def marketplace_to_items(listings):
             'author': clean_xml(seller) or 'Facebook Marketplace',
         })
     return items
+# ---------------------------------------------------------------- page-embedded stories
+
+def extract_stories_from_page(html):
+    """Extract Story objects embedded directly in a page's JSON.
+
+    Some views (a member's posts inside a group) render their stories server-side, so
+    the nodes are in the HTML rather than reachable through a stable GraphQL doc_id.
+    Their shape is flat — `message`, `attachments`, `url` at the top level — instead of
+    the `comet_sections.content.story` nesting the feed query uses; render_story and
+    stories_to_items handle both.
+
+    Placeholder feed units are dropped: the page also contains `__typename: "Story"`
+    stubs for ads/lazy-load containers that carry no message, no url and no actors, and
+    emitting them would produce blank feed entries.
+    """
+    stories = []
+    seen = set()
+
+    # Anchor on the bare key, not '"__typename":"Story"': Facebook emits no space after
+    # the colon while json.dumps does, and other serializers vary again. Matching the
+    # key alone keeps this independent of formatting.
+    for obj in _iter_json_objects_containing(html, '"__typename"'):
+        if obj.get('__typename') != 'Story':
+            continue
+
+        has_message = bool((obj.get('message') or {}).get('text'))
+        has_rich = bool((obj.get('comet_sections') or {}).get('message'))
+        has_url = bool(obj.get('url') or obj.get('permalink_url'))
+        has_actor = bool(obj.get('actors'))
+        # A real post has content or a permalink; a stub has neither.
+        if not (has_message or has_rich or has_url or has_actor):
+            continue
+
+        key = obj.get('post_id') or obj.get('id') or obj.get('url') or obj.get('permalink_url')
+        if key:
+            if key in seen:
+                continue
+            seen.add(key)
+        stories.append(obj)
+    return stories
+
+
+def fetch_group_member_posts(group, user, limit=DEFAULT_LIMIT):
+    """Fetch posts by one member inside a group.
+
+    Returns (stories, group_name). Facebook renders these into the page, so no doc_id is
+    involved.
+    """
+    feed_requires_cookie()
+    session = _get_session(get_cookie())
+
+    group_id = group if str(group).isdigit() else resolve_group_id(group)
+    url = f'{BASE_URL}/groups/{group_id}/user/{user}/'
+
+    page = _request_with_retry(session, 'get', url, timeout=REQUEST_TIMEOUT)
+    if page.status_code != 200:
+        raise FacebookRateLimited(
+            f'Could not load {url} (HTTP {page.status_code}).'
+        )
+
+    stories = extract_stories_from_page(page.text)
+    if not stories:
+        # An empty member view is legitimate (the member may simply have no posts), so
+        # only treat it as a session problem when the page also lacks any token.
+        if not extract_tokens(page.text)['lsd']:
+            raise FacebookSessionExpired(
+                f'No lsd token on {url} — FACEBOOK_COOKIE may be expired. If the group is '
+                'private, the account must already be a member.'
+            )
+
+    return stories[:limit], None
+
+
+# ---------------------------------------------------------------- seller listings
+
+def fetch_seller_listings(seller_id, limit=DEFAULT_LIMIT):
+    """Fetch a Marketplace seller's listings.
+
+    The seller page nests each item under
+    ``marketplace_listing_sets.edges[].node.canonical_listing``, unlike the search page
+    where listing objects sit directly at the top level.
+    """
+    feed_requires_cookie()
+    session = _get_session(get_cookie())
+    url = f'{BASE_URL}/marketplace/profile/{seller_id}/'
+
+    page = _request_with_retry(session, 'get', url, timeout=REQUEST_TIMEOUT)
+    if page.status_code != 200:
+        raise FacebookRateLimited(
+            f'Could not load {url} (HTTP {page.status_code}).'
+        )
+    if 'marketplace_listing_title' not in page.text:
+        if not extract_tokens(page.text)['lsd']:
+            raise FacebookSessionExpired(
+                f'No lsd token on {url} — FACEBOOK_COOKIE may be expired.'
+            )
+        return [], None
+
+    listings = []
+    seen = set()
+    for obj in _iter_json_objects_containing(page.text, 'marketplace_listing_title'):
+        # Unwrap the seller-page nesting when present.
+        candidate = obj.get('canonical_listing') or obj
+        title = candidate.get('marketplace_listing_title')
+        listing_id = candidate.get('id')
+        if not title or not listing_id or listing_id in seen:
+            continue
+        seen.add(listing_id)
+        listings.append(candidate)
+        if len(listings) >= limit:
+            break
+
+    seller_name = None
+    match = re.search(r'"marketplace_listing_seller":\{"__typename":"User","name":"([^"]+)"',
+                      page.text)
+    if match:
+        seller_name = match.group(1)
+    return listings, seller_name

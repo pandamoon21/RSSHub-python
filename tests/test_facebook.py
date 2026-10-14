@@ -623,5 +623,170 @@ class CookieExportScriptTests(unittest.TestCase):
         self.assertIn('xs=34%3Aabc', value)
 
 
+class PageEmbeddedStoryTests(unittest.TestCase):
+    """Stories embedded in page HTML (group member view) use a flat shape."""
+
+    FLAT = {
+        '__typename': 'Story',
+        'id': 'S:1',
+        'url': 'https://www.facebook.com/groups/g/permalink/1/',
+        'creation_time': 1791176859,
+        'actors': [{'name': 'Nasrun'}],
+        'message': {'text': 'Ram Laptop DDR 3'},
+        'attachments': [],
+    }
+
+    def test_flat_story_renders_and_maps(self):
+        items = u.stories_to_items([self.FLAT])
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0]['title'], 'Ram Laptop DDR 3')
+        self.assertEqual(items[0]['author'], 'Nasrun')
+        # Flat shape carries `url`, not `permalink_url`.
+        self.assertEqual(items[0]['link'], 'https://www.facebook.com/groups/g/permalink/1/')
+        self.assertIsNotNone(items[0]['pubDate'])
+
+    def test_placeholder_feed_units_are_dropped(self):
+        """Page HTML contains Story stubs for ads/lazy containers; they must not ship."""
+        junk = [
+            {'__typename': 'Story', 'id': 'stub'},
+            {'__typename': 'Story', '__isFeedUnit': True, 'actors': []},
+        ]
+        # Stories with no message, url or actors are placeholders.
+        for node in junk:
+            has_content = (bool((node.get('message') or {}).get('text'))
+                           or bool((node.get('comet_sections') or {}).get('message'))
+                           or bool(node.get('url') or node.get('permalink_url'))
+                           or bool(node.get('actors')))
+            self.assertFalse(has_content, node)
+
+    def test_extract_from_page_filters_and_dedupes(self):
+        html = ('prefix ' + json.dumps(self.FLAT)
+                + ' ' + json.dumps({'__typename': 'Story', 'id': 'stub'})
+                + ' ' + json.dumps(self.FLAT))
+        found = u.extract_stories_from_page(html)
+        self.assertEqual(len(found), 1, 'placeholder dropped and duplicate collapsed')
+
+    def test_extract_from_page_tolerates_no_stories(self):
+        self.assertEqual(u.extract_stories_from_page('<html>nothing here</html>'), [])
+
+
+class SellerListingsTests(FacebookTestBase):
+    def test_canonical_listing_is_unwrapped(self):
+        """Seller pages nest the listing one level deeper than search results."""
+        inner = {'id': '9', 'marketplace_listing_title': 'PS 4 fat',
+                 'listing_price': {'formatted_amount': 'Rp2.600.000'},
+                 'location': {'reverse_geocode': {'city': 'Batam'}}}
+        page_html = ('{"marketplace_search":0} ' + json.dumps(
+            {'marketplace_listing_sets': {'edges': [{'node': {'canonical_listing': inner}}]}})
+            + ' ' + json.dumps({'canonical_listing': inner}))
+        session = FakeSession(page_html=page_html)
+        p1, p2 = (mock.patch.object(u, '_get_session', return_value=session),
+                  mock.patch.object(u, 'get_cookie', return_value='c_user=1; xs=2'))
+        with p1, p2:
+            listings, _ = u.fetch_seller_listings('123', limit=10)
+        self.assertEqual(len(listings), 1)
+        self.assertEqual(listings[0]['id'], '9')
+        items = u.marketplace_to_items(listings)
+        self.assertIn('Rp2.600.000', items[0]['description'])
+
+    def test_missing_cookie_raises_session_expired(self):
+        with mock.patch.object(u, 'get_cookie', return_value=None):
+            with self.assertRaises(u.FacebookSessionExpired):
+                u.fetch_seller_listings('123')
+
+
+class MarketplaceFilterTests(FacebookTestBase):
+    def _run(self, **kwargs):
+        page_html = ('{"marketplace_search":0} ' + json.dumps(
+            {'id': '1', 'marketplace_listing_title': 'ssd', 'listing_price': {}}))
+        session = FakeSession(page_html=page_html)
+        p1, p2 = (mock.patch.object(u, '_get_session', return_value=session),
+                  mock.patch.object(u, 'get_cookie', return_value='c_user=1; xs=2'))
+        with p1, p2:
+            u.fetch_marketplace_listings('ssd', limit=5, **kwargs)
+        return session.get_calls[0]
+
+    def test_city_and_days_become_url_and_params(self):
+        url, kwargs = self._run(location='yogyakartacity', days=1)
+        self.assertIn('/marketplace/yogyakartacity/search', url)
+        self.assertEqual(kwargs['params']['daysSinceListed'], 1)
+        self.assertEqual(kwargs['params']['query'], 'ssd')
+
+    def test_no_location_uses_default_search_path(self):
+        url, kwargs = self._run()
+        self.assertIn('/marketplace/search', url)
+        self.assertNotIn('daysSinceListed', kwargs['params'])
+
+
+class ProfileResolutionTests(FacebookTestBase):
+    def test_profile_falls_back_to_page_html_userid(self):
+        """plugins/page.php returns nothing for personal profiles; the page has userID."""
+        plugin = FakeResponse('<html>no page id here</html>')
+        profile = FakeResponse('<html>"userID":"100072517471885"</html>')
+        session = mock.MagicMock()
+        session.get.side_effect = [plugin, profile]
+        with mock.patch.object(u, '_get_session', return_value=session), \
+             mock.patch.object(u, 'get_cookie', return_value='c_user=1; xs=2'):
+            self.assertEqual(u.resolve_page_id('mirzum.habibi.2025'), '100072517471885')
+
+    def test_page_plugin_is_preferred(self):
+        plugin = FakeResponse('<html>"pageID":"100044561550831"</html>')
+        session = mock.MagicMock()
+        session.get.side_effect = [plugin]
+        with mock.patch.object(u, '_get_session', return_value=session), \
+             mock.patch.object(u, 'get_cookie', return_value='c_user=1; xs=2'):
+            self.assertEqual(u.resolve_page_id('NASA'), '100044561550831')
+
+    def test_unknown_identifier_raises_not_found(self):
+        session = mock.MagicMock()
+        session.get.side_effect = [FakeResponse('<html>x</html>'),
+                                   FakeResponse('<html>y</html>')]
+        with mock.patch.object(u, '_get_session', return_value=session), \
+             mock.patch.object(u, 'get_cookie', return_value='c_user=1; xs=2'):
+            with self.assertRaises(u.FacebookNotFound):
+                u.resolve_page_id('does.not.exist.99887')
+
+
+class NewRouteTests(FacebookTestBase):
+    def test_routes_registered(self):
+        rules = {str(r) for r in self.app.url_map.iter_rules()}
+        self.assertIn('/facebook/marketplace/seller/<string:seller_id>', rules)
+        self.assertIn('/facebook/group/<string:id>/user/<string:user_id>', rules)
+
+    def test_seller_route_does_not_shadow_search_route(self):
+        """/marketplace/<query> must not swallow /marketplace/seller/<id>."""
+        adapter = self.app.url_map.bind('localhost')
+        self.assertEqual(adapter.match('/facebook/marketplace/seller/123')[0],
+                         'main.facebook_marketplace_seller')
+        self.assertEqual(adapter.match('/facebook/marketplace/iphone')[0],
+                         'main.facebook_marketplace')
+
+    def test_group_member_route_renders(self):
+        client = self.app.test_client()
+        story = {
+            '__typename': 'Story', 'id': 'a', 'url': 'https://f/g/permalink/1',
+            'creation_time': 1700000000, 'actors': [{'name': 'Nasrun'}],
+            'message': {'text': 'member post'}, 'attachments': [],
+        }
+        html = json.dumps(story)
+        session = FakeSession(page_html=html)
+        p1, p2 = self.patch_network(session)
+        with p1, p2:
+            resp = client.get('/facebook/group/123/user/456')
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn(b'member post', resp.data)
+
+    def test_marketplace_location_and_days_accepted(self):
+        client = self.app.test_client()
+        page_html = ('{"marketplace_search":0} ' + json.dumps(
+            {'id': '1', 'marketplace_listing_title': 'ssd', 'listing_price': {}}))
+        session = FakeSession(page_html=page_html)
+        p1, p2 = self.patch_network(session)
+        with p1, p2:
+            resp = client.get('/facebook/marketplace/ssd?location=yogyakartacity&days=1')
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('/marketplace/yogyakartacity/search', session.get_calls[0][0])
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -149,11 +149,16 @@ Marketplace accepts two extra query parameters, matching Facebook's own filters:
 
 ##### Why `?details=1` exists
 
-The **search** page only carries a lightweight card per listing: title, price, city, seller
-and a single cover photo. The seller's description and the rest of the photo gallery live on
-the **item** page, which the search route never touches — so without `details` those two
-things cannot appear in the feed. That is a limit of the data Facebook embeds in search
-results, not a parsing bug.
+The **search** page carries only a lightweight card per listing: title, price, city, seller
+and a single cover photo. Verified against a live authenticated session, the search HTML
+contains **zero** occurrences of `listing_photos`, `marketplace_listing_description` or
+`redacted_description`, while the item page for the same listing contains all three. The
+description and the rest of the gallery therefore cannot appear without visiting the item
+page — a limit of what Facebook embeds in search results, not a parsing bug.
+
+On the item page the body ships as `redacted_description` (not
+`marketplace_listing_description`); both are checked, along with the `{"text": ...}` nesting
+some nodes use.
 
 ```bash
 # Description + every photo, for the first 5 listings

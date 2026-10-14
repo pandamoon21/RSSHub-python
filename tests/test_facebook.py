@@ -650,6 +650,40 @@ class DetailEnrichmentTests(unittest.TestCase):
     def test_detail_description_absent_returns_none(self):
         self.assertIsNone(u._marketplace_item_description('{"other":1}'))
 
+    def test_real_item_page_shape(self):
+        """Captured from a live item page: body under redacted_description, gallery a list.
+
+        Guards the exact shape the reported listing used, where the search page carried
+        neither field (0 occurrences of listing_photos / marketplace_listing_description /
+        redacted_description) while the item page carried all three.
+        """
+        html = (
+            '{"__typename":"MarketplaceListing","redacted_description":'
+            '{"text":"Harga net \\nHealth 100 \\nPerf 100 \\nKapasitas 2tb unit simpanan '
+            '\\nCek sepuasnya \\n\\nCod surabaya"},'
+            '"listing_photos":['
+            '{"__typename":"CatalogMarketplaceEnhancementTransformedImage","image":'
+            '{"uri":"https://scontent.fjog3-1.fna.fbcdn.net/v/t39/1.jpg"}},'
+            '{"__typename":"CatalogMarketplaceEnhancementTransformedImage","image":'
+            '{"uri":"https://scontent.fjog3-1.fna.fbcdn.net/v/t39/2.jpg"}}]}'
+        )
+        self.assertIn('Cod surabaya', u._marketplace_item_description(html))
+
+        # And it reaches the feed once merged onto a search-page listing.
+        listing = self._listing(primary_listing_photo={'image': {'uri': 'https://i/cover.jpg'}})
+        out, _ = self._run([listing], item_html=html)
+        item = u.marketplace_to_items(out)[0]
+        self.assertIn('Kapasitas 2tb unit simpanan', item['description'])
+        self.assertIn('Cod surabaya', item['description'])
+        # Cover plus both gallery photos.
+        self.assertEqual(item['description'].count('<img'), 3)
+
+    def test_search_page_node_carries_neither_field(self):
+        """A search-page node has no body and no gallery: the feed must not invent them."""
+        listing = self._listing()
+        self.assertIsNone(u._marketplace_description(listing))
+        self.assertEqual(len(u._marketplace_photo_uris(listing)), 1)
+
 class SessionCacheTests(unittest.TestCase):
     def test_sessions_are_reused_per_cookie(self):
         """One session per cookie: the factory must run twice, not once per call."""

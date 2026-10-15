@@ -952,6 +952,50 @@ class SellerListingsTests(FacebookTestBase):
         items = u.marketplace_to_items(listings)
         self.assertIn('Rp2.600.000', items[0]['description'])
 
+    def test_recommendation_modules_do_not_leak_other_sellers(self):
+        """A seller page also carries "more from other sellers" modules.
+
+        Those listings embed their own marketplace_listing_title, so harvesting by that
+        key alone mixed foreign sellers into the feed. Only marketplace_listing_sets may
+        be read.
+        """
+        seller_id = '100072517471885'
+        mine = {'id': '9', 'marketplace_listing_title': 'PS 4 fat',
+                'marketplace_listing_seller': {'id': seller_id, 'name': 'Krisna'}}
+        foreign = {'id': '777', 'marketplace_listing_title': 'iPhone 13',
+                   'marketplace_listing_seller': {'id': '555', 'name': 'Budi'}}
+        page_html = (json.dumps({'marketplace_listing_sets': {
+                        'edges': [{'node': {'canonical_listing': mine}}]}})
+                     + json.dumps({'recommendations': [foreign]}))
+        session = FakeSession(page_html=page_html)
+        p1, p2 = (mock.patch.object(u, '_get_session', return_value=session),
+                  mock.patch.object(u, 'get_cookie', return_value='c_user=1; xs=2'))
+        with p1, p2:
+            listings, _ = u.fetch_seller_listings(seller_id, limit=10)
+        self.assertEqual([l['id'] for l in listings], ['9'])
+        authors = {i['author'] for i in u.marketplace_to_items(listings)}
+        self.assertEqual(authors, {'Krisna'})
+
+    def test_listing_from_another_seller_in_a_set_is_dropped(self):
+        """Defence in depth: a mismatched marketplace_listing_seller id is skipped.
+
+        Listings that do not expose a seller id are kept (the field is absent on some
+        payloads), but one that names a different seller must not be emitted.
+        """
+        mine = {'id': '9', 'marketplace_listing_title': 'PS 4 fat',
+                'marketplace_listing_seller': {'id': '100072517471885', 'name': 'Krisna'}}
+        foreign = {'id': '777', 'marketplace_listing_title': 'iPhone 13',
+                   'marketplace_listing_seller': {'id': '555', 'name': 'Budi'}}
+        page_html = json.dumps({'marketplace_listing_sets': {'edges': [
+            {'node': {'canonical_listing': mine}},
+            {'node': {'canonical_listing': foreign}}]}})
+        session = FakeSession(page_html=page_html)
+        p1, p2 = (mock.patch.object(u, '_get_session', return_value=session),
+                  mock.patch.object(u, 'get_cookie', return_value='c_user=1; xs=2'))
+        with p1, p2:
+            listings, _ = u.fetch_seller_listings('100072517471885', limit=10)
+        self.assertEqual([l['id'] for l in listings], ['9'])
+
     def test_missing_cookie_raises_session_expired(self):
         with mock.patch.object(u, 'get_cookie', return_value=None):
             with self.assertRaises(u.FacebookSessionExpired):

@@ -1250,6 +1250,12 @@ def fetch_seller_listings(seller_id, limit=DEFAULT_LIMIT):
     The seller page nests each item under
     ``marketplace_listing_sets.edges[].node.canonical_listing``, unlike the search page
     where listing objects sit directly at the top level.
+
+    Only that container is harvested. A seller page also carries recommendation modules
+    ("more from other sellers") whose listings embed their own
+    ``marketplace_listing_title``; scanning the page for that key indiscriminately would
+    leak those other sellers' items into this feed. When a listing does expose its
+    seller id, it is additionally required to match the requested seller.
     """
     feed_requires_cookie()
     session = _get_session(get_cookie())
@@ -1269,15 +1275,32 @@ def fetch_seller_listings(seller_id, limit=DEFAULT_LIMIT):
 
     listings = []
     seen = set()
-    for obj in _iter_json_objects_containing(page.text, 'marketplace_listing_title'):
-        # Unwrap the seller-page nesting when present.
-        candidate = obj.get('canonical_listing') or obj
-        title = candidate.get('marketplace_listing_title')
-        listing_id = candidate.get('id')
-        if not title or not listing_id or listing_id in seen:
-            continue
-        seen.add(listing_id)
-        listings.append(candidate)
+
+    # Walk only the seller's own listing sets. A plain scan for
+    # 'marketplace_listing_title' would also match the recommendation modules Facebook
+    # renders below the seller's items, mixing other sellers into the feed.
+    for obj in _iter_json_objects_containing(page.text, 'marketplace_listing_sets'):
+        edges = ((obj.get('marketplace_listing_sets') or {}).get('edges')) or []
+        for edge in edges:
+            if not isinstance(edge, dict):
+                continue
+            node = edge.get('node') or {}
+            candidate = node.get('canonical_listing') or node
+            if not isinstance(candidate, dict):
+                continue
+
+            title = candidate.get('marketplace_listing_title')
+            listing_id = candidate.get('id')
+            if not title or not listing_id or listing_id in seen:
+                continue
+            # The listing's own seller, when present, must be the requested seller.
+            listed_seller = (candidate.get('marketplace_listing_seller') or {}).get('id')
+            if listed_seller and str(listed_seller) != str(seller_id):
+                continue
+            seen.add(listing_id)
+            listings.append(candidate)
+            if len(listings) >= limit:
+                break
         if len(listings) >= limit:
             break
 

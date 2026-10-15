@@ -16,11 +16,14 @@ Facebook also rate-limits aggressively. When a query is declined, this module ra
 """
 import asyncio
 import json
+import logging
 import os
 import re
 import threading
 import time
 from datetime import datetime, timezone
+
+logger = logging.getLogger(__name__)
 
 # curl_cffi is only in requirements.txt (full install). The Vercel/lite manifest omits
 # it, so follow the project convention for optional deps: import defensively and gate
@@ -38,6 +41,23 @@ REQUEST_TIMEOUT = 30
 
 # TLS fingerprint to present. Facebook rejects non-browser handshakes outright.
 IMPERSONATE = 'chrome'
+
+# Domain Facebook's login cookies are scoped to. `c_user` is a host-only cookie on
+# `.facebook.com`, and every URL this module requests lives there.
+COOKIE_DOMAIN = '.facebook.com'
+
+# Cookies Facebook rotates during a session and only ever sends back via Set-Cookie. A
+# browser applies these without thinking; a client that pins a static Cookie header
+# throws them away and starts looking like a stale session, which is the classic
+# "logged out after a while" scrape. `xs` is the session secret itself — when Facebook
+# renews it mid-session (it does, rotating the timestamp inside it) the old value stops
+# authenticating, so it must be picked up like any other rotated cookie. The remainder
+# (`datr`, `fr`, `wd`, `sb`, …) is the browser-state set Facebook checks for consistency
+# between requests.
+ROTATED_COOKIE_NAMES = (
+    'c_user', 'xs', 'datr', 'fr', 'wd', 'sb', 'dpr', 'presence', 'ps_l', 'ps_n',
+    'm_pixel_ratio', 'fbl_st', 'locale',
+)
 
 # Signals to Facebook that the request comes from the comet web client. These mirror the
 # upstream relay-provider variables; omitting them makes the API return an error document.
@@ -136,6 +156,16 @@ class FacebookUnavailable(FacebookRateLimited):
     suggesting they re-export a cookie.
     """
 
+class FacebookTokenStale(FacebookRateLimited):
+    """Raised when the per-page lsd/fb_dtsg tokens are no longer accepted.
+
+    A subclass of FacebookRateLimited so the route still answers 503 (the feed is not
+    permanently broken and a reader should retry), while staying distinguishable in
+    logs from real throttling. Facebook signals this as HTTP 200 with an empty body —
+    the single most misleading upstream response this module has to interpret, because
+    it looks exactly like a rate limit while needing a completely different fix.
+    """
+
 
 def clean_xml(text):
     """Make a string safe to embed inside CDATA in atom.xml.
@@ -158,6 +188,79 @@ def clean_xml(text):
 def get_cookie():
     """Return the configured Facebook cookie, or None."""
     return os.environ.get('FACEBOOK_COOKIE') or None
+
+def parse_cookie_header(value):
+    """Parse a ``name=value; name=value`` cookie header into an ordered list of pairs.
+
+    Tolerates the shapes an operator can realistically paste: stray whitespace, a
+    trailing ``;``, and a full browser export where each pair carries the
+    ``=value``-only form. Values are kept verbatim — `xs` is percent-encoded and
+    decoding it would change what Facebook receives.
+    """
+    pairs = []
+    for chunk in (value or '').split(';'):
+        chunk = chunk.strip()
+        if not chunk or '=' not in chunk:
+            continue
+        name, _, cookie_value = chunk.partition('=')
+        name = name.strip()
+        if name:
+            pairs.append((name, cookie_value.strip()))
+    return pairs
+
+# ------------------------------------------------------------------ cookie jar
+
+# A browser keeps every cookie Facebook hands back, so the session keeps working after
+# Facebook rotates `datr`/`fr`/`xs`. Pinning the FACEBOOK_COOKIE env value as a static
+# Cookie header does the opposite: each response telling us "here is your new xs" is
+# dropped, and the stored `xs` eventually stops being the live one. That mismatch is what
+# surfaces as "the spider got logged out while my browser did not".
+#
+# So: seed a real cookie jar from FACEBOOK_COOKIE, and let the session's jar be the live
+# state. Requests are therefore sent *without* a hand-pinned Cookie header — curl_cffi
+# builds it from the jar (per request, so it also honours domain/path/expiry).
+_COOKIE_JAR_LOCK = threading.Lock()
+_COOKIE_JARS = {}
+
+def _new_cookie_jar(cookie):
+    """Build a cookie jar from a ``name=value; ...`` header value."""
+    jar = curl_requests.cookies.Cookies()
+    for name, value in parse_cookie_header(cookie):
+        jar.set(name, value, domain=COOKIE_DOMAIN)
+    return jar
+
+def _get_cookie_jar(cookie):
+    """Return the live jar for this configured cookie, creating it on first use.
+
+    The env value only seeds the jar; once a session exists the jar is authoritative,
+    because Facebook rotates cookies inside it.
+    """
+    if cookie is None:
+        return None
+    with _COOKIE_JAR_LOCK:
+        jar = _COOKIE_JARS.get(cookie)
+        if jar is None:
+            jar = _new_cookie_jar(cookie)
+            _COOKIE_JARS[cookie] = jar
+        return jar
+
+def reset_cookie_jars():
+    """Drop cached jars so the next call re-seeds from FACEBOOK_COOKIE.
+
+    Paired with :func:`reset_sessions`; both are needed after a session-expired
+    response, since neither the connection pool nor the rotated cookie state can be
+    trusted once Facebook has invalidated the session.
+    """
+    with _COOKIE_JAR_LOCK:
+        _COOKIE_JARS.clear()
+
+def cookie_jar_snapshot(cookie):
+    """Return the jar's cookies as {name: value} — a debugging aid, not for logging.
+
+    The values are live credentials; callers must not print them in full.
+    """
+    jar = _get_cookie_jar(cookie)
+    return dict(jar.get_dict()) if jar is not None else {}
 
 
 def get_route_limit(limit=None, default=DEFAULT_LIMIT):
@@ -486,11 +589,26 @@ def find_page_info(value):
 
 # ---------------------------------------------------------------- requests
 
+def _seed_session_cookies(session, cookie):
+    """Install the shared cookie jar into a session, if the session can hold one.
+
+    curl_cffi's real sessions expose ``.cookies``; the test doubles do not, so this stays
+    a no-op there rather than making every caller test for it.
+    """
+    jar = getattr(session, 'cookies', None)
+    if jar is None or not cookie:
+        return
+    jar.update(_get_cookie_jar(cookie))
+
 def _new_session(cookie=None):
-    """Create a curl_cffi session impersonating Chrome.
+    """Create a curl_cffi session impersonating Chrome, seeded with the cookie jar.
 
     Callers should normally use :func:`_get_session`, which reuses one session per cookie
     so the TLS handshake and connection pool are not rebuilt on every request.
+
+    The cookie is installed into the session's jar rather than as a pinned ``cookie``
+    header. A pinned header is never updated by Facebook's ``Set-Cookie`` responses, so
+    the rotation described above is lost; the jar is refreshed on every response instead.
     """
     session = curl_requests.Session(impersonate=IMPERSONATE)
     session.headers.update({
@@ -501,8 +619,7 @@ def _new_session(cookie=None):
         'sec-fetch-dest': 'document',
         'upgrade-insecure-requests': '1',
     })
-    if cookie:
-        session.headers['cookie'] = cookie
+    _seed_session_cookies(session, cookie)
     return session
 
 
@@ -523,10 +640,61 @@ def _get_session(cookie):
 
 
 def reset_sessions():
-    """Drop cached sessions. Used by tests and after a session-expired response."""
+    """Drop cached sessions and cookie jars. Used by tests and after an expired session.
+
+    The jar is dropped too: once Facebook has invalidated the session, the rotated
+    cookies in it are as unusable as the env value it was seeded from.
+    """
     with _SESSION_LOCK:
         _SESSIONS.clear()
+    reset_cookie_jars()
 
+
+def _note_rotated_cookies(session, response):
+    """Adopt the cookies Facebook renewed in this response, in both jars.
+
+    This is the whole point of the exercise, and it is not automatic: curl_cffi's session
+    does *not* merge ``Set-Cookie`` into its own jar the way ``requests`` does (verified
+    against curl_cffi 0.16 — the response exposes the cookies, the session jar keeps the
+    stale value). Combined with a pinned ``Cookie`` header, that meant every renewal
+    Facebook sent mid-session was discarded and the stored `xs` slowly stopped being the
+    live one. That is the "logged out while my browser is fine" symptom.
+
+    Two targets, because both matter:
+
+    * the session jar, so the next request on this connection pool sends the new value;
+    * the shared jar, so a rebuilt session is seeded from the current state rather than
+      from the env value that has since gone stale.
+    """
+    response_cookies = getattr(response, 'cookies', None)
+    if response_cookies is None:
+        return
+    try:
+        names = set(response_cookies.keys())
+    except AttributeError:
+        return
+
+    rotated = {}
+    for name in ROTATED_COOKIE_NAMES:
+        if name not in names:
+            continue
+        value = response_cookies.get(name)
+        if value is not None:
+            rotated[name] = value
+    if not rotated:
+        return
+
+    session_jar = getattr(session, 'cookies', None)
+    with _COOKIE_JAR_LOCK:
+        for name, value in rotated.items():
+            if session_jar is not None:
+                session_jar.set(name, value, domain=COOKIE_DOMAIN)
+            # Every cached jar: an operator may rotate FACEBOOK_COOKIE while the app runs,
+            # leaving the same account seeded under more than one env value.
+            for cached in _COOKIE_JARS.values():
+                cached.set(name, value, domain=COOKIE_DOMAIN)
+
+    logger.debug('Facebook renewed cookie(s): %s', ', '.join(sorted(rotated)))
 
 def _request_with_retry(session, method, url, **kwargs):
     """Perform a request, retrying transient network faults with backoff.
@@ -538,7 +706,9 @@ def _request_with_retry(session, method, url, **kwargs):
     last_error = None
     for attempt in range(1, MAX_ATTEMPTS + 1):
         try:
-            return getattr(session, method)(url, **kwargs)
+            response = getattr(session, method)(url, **kwargs)
+            _note_rotated_cookies(session, response)
+            return response
         except Exception as exc:  # curl_cffi raises its own transport exceptions
             last_error = exc
             if attempt == MAX_ATTEMPTS:
@@ -550,21 +720,76 @@ def _request_with_retry(session, method, url, **kwargs):
     )
 
 
+# Token patterns, in the order the reverse-engineered client tries them. The Comet
+# (React) bundle embeds them as relay-style JSON; the legacy/mobile bundles use form
+# inputs. Only the first pattern matches today's HTML, but a bundle swap silently
+# switching shape is exactly how this breaks, so both are kept.
+_TOKEN_PATTERNS = {
+    'fb_dtsg': (
+        r'"DTSGInitialData"\s*,\s*\[\s*\]\s*,\s*\{\s*"token"\s*:\s*"([^"]+)"',
+        r'"dtsg"\s*:\s*\{\s*"token"\s*:\s*"([^"]+)"',
+        r'name="fb_dtsg"\s+value="([^"]+)"',
+    ),
+    'lsd': (
+        r'"LSD"\s*,\s*\[\s*\]\s*,\s*\{\s*"token"\s*:\s*"([^"]+)"',
+        r'name="lsd"\s+value="([^"]+)"',
+    ),
+}
+
+# Build/revision identifiers. These are NOT sent on the requests this module makes —
+# the reverse-engineered client pins them, but a pinned value goes stale on every
+# deploy (observed: the pinned 1037953373 was ~12M revisions behind the live page), and
+# advertising a stale client build is worse than advertising none. They are read only
+# so an expired-build marker in an error can be recognised and reported, and the
+# `_rev` here is deliberately never sent.
+_REVISION_PATTERNS = {
+    'rev': (r'"client_revision"\s*:\s*(\d+)', r'"server_revision"\s*:\s*(\d+)'),
+    'hsi': (r'"hsi"\s*:\s*"(\d+)"',),
+    'hs': (r'"haste_session"\s*:\s*"([^"]+)"',),
+}
+
+def _first_match(html, patterns):
+    """Return the first capture group matching any pattern, or None."""
+    for pattern in patterns:
+        match = re.search(pattern, html)
+        if match:
+            return match.group(1)
+    return None
+
+def jazoest_for(dtsg):
+    """Compute `jazoest`, the numeric checksum Facebook sends alongside `fb_dtsg`.
+
+    The reverse-engineered formula is a leading ``2`` followed by the sum of the
+    `fb_dtsg` code points. Verified against the live page: the value scraped from the
+    HTML and the value computed here match exactly. Computing it is more robust than
+    scraping, because the checksum appears in the HTML only inside a URL that the
+    bundle may stop emitting.
+    """
+    if not dtsg:
+        return None
+    return '2' + str(sum(ord(char) for char in dtsg))
+
 def extract_tokens(html):
     """Pull the request tokens Facebook issues per page load.
 
     A locally generated `lsd` is NOT accepted: the GraphQL call then returns an empty
     body or `missing_required_variable_value`. The tokens are scoped to one page load,
     so they must be harvested from the same page we are about to query.
+
+    `jazoest` is computed from `fb_dtsg` when the HTML does not carry it — see
+    :func:`jazoest_for`. The revision fields are informational only (see
+    `_REVISION_PATTERNS`); they are never sent upstream.
     """
-    lsd = re.search(r'"LSD",\[\],\{"token":"([^"]+)"', html)
-    jazoest = re.search(r'jazoest=(\d+)', html)
-    dtsg = re.search(r'"DTSGInitialData",\[\],\{"token":"([^"]+)"', html)
-    return {
-        'lsd': lsd.group(1) if lsd else None,
-        'jazoest': jazoest.group(1) if jazoest else None,
-        'fb_dtsg': dtsg.group(1) if dtsg else None,
+    dtsg = _first_match(html, _TOKEN_PATTERNS['fb_dtsg'])
+    scraped_jazoest = _first_match(html, (r'jazoest=(\d+)',))
+    tokens = {
+        'lsd': _first_match(html, _TOKEN_PATTERNS['lsd']),
+        'jazoest': scraped_jazoest or jazoest_for(dtsg),
+        'fb_dtsg': dtsg,
     }
+    for name, patterns in _REVISION_PATTERNS.items():
+        tokens[name] = _first_match(html, patterns)
+    return tokens
 
 
 def feed_requires_cookie():
@@ -610,41 +835,29 @@ def bootstrap_tokens(session, url):
     return tokens
 
 
-def fetch_stories(friendly_name, doc_id, variables, limit, page_url=None):
-    """POST a comet GraphQL query and return the parsed Story nodes.
+def post_graphql(session, friendly_name, doc_id, payload, tokens, bootstrap_url):
+    """POST one comet GraphQL query with the given tokens and return the raw text.
 
-    Raises FacebookSessionExpired when the cookie is unusable, and FacebookRateLimited
-    when Facebook declines the query for any other reason (rate limit, rotated doc_id).
+    Split out of :func:`fetch_stories` so the stale-token retry can reissue the exact
+    same request without duplicating the header contract — the headers are part of the
+    reverse-engineered protocol (`x-fb-lsd` must mirror the form field) and must not
+    drift apart between the first attempt and the retry.
     """
-    feed_requires_cookie()
-    session = _get_session(get_cookie())
-
-    # Tokens are scoped to a page load, so bootstrap by loading the target page first.
-    bootstrap_url = page_url or f'{BASE_URL}/me'
-    tokens = bootstrap_tokens(session, bootstrap_url)
-
-    payload = {
+    body = {
         'lsd': tokens['lsd'],
         'jazoest': tokens['jazoest'] or '',
         'fb_api_req_friendly_name': friendly_name,
-        'variables': json.dumps({
-            **PROVIDER_VARIABLES,
-            **variables,
-            'count': limit,
-            'cursor': None,
-            'scale': 1,
-            'useDefaultActor': False,
-        }),
+        'variables': payload,
         'doc_id': doc_id,
     }
     if tokens['fb_dtsg']:
-        payload['fb_dtsg'] = tokens['fb_dtsg']
+        body['fb_dtsg'] = tokens['fb_dtsg']
 
     res = _request_with_retry(
         session,
         'post',
         GRAPHQL_URL,
-        data=payload,
+        data=body,
         headers={
             'content-type': 'application/x-www-form-urlencoded',
             'x-fb-lsd': tokens['lsd'],
@@ -658,8 +871,14 @@ def fetch_stories(friendly_name, doc_id, variables, limit, page_url=None):
         },
         timeout=REQUEST_TIMEOUT,
     )
-    text = res.text
+    return res.text
 
+def _parse_graphql_stream(text):
+    """Parse an NDJSON GraphQL response into (stories, page_info).
+
+    The response is newline-delimited JSON, and a single Story node can be nested
+    anywhere in the tree, so both collectors walk the whole document.
+    """
     stories = []
     page_info = None
     for line in text.split('\n'):
@@ -673,8 +892,54 @@ def fetch_stories(friendly_name, doc_id, variables, limit, page_url=None):
         collect_stories(data, stories)
         if page_info is None:
             page_info = find_page_info(data)
+    return stories, page_info
 
+def fetch_stories(friendly_name, doc_id, variables, limit, page_url=None):
+    """POST a comet GraphQL query and return the parsed Story nodes.
+
+    Raises FacebookSessionExpired when the cookie is unusable, FacebookTokenStale when
+    only the per-page tokens went bad, and FacebookRateLimited when Facebook declines
+    the query for any other reason (throttling, rotated doc_id).
+
+    A stale-token rejection is retried once with freshly harvested tokens before being
+    raised. Facebook hands out `lsd`/`fb_dtsg` on every page load but accepts them for
+    only a bounded window, so a token harvested a moment before a rejection can already
+    be too old; re-bootstrapping costs one GET and turns a spurious 503 into a served
+    feed. Only a stale-token rejection is retried — retrying a real rate limit or a
+    login failure would deepen the problem rather than fix it.
+    """
+    feed_requires_cookie()
+    session = _get_session(get_cookie())
+
+    # Tokens are scoped to a page load, so bootstrap by loading the target page first.
+    bootstrap_url = page_url or f'{BASE_URL}/me'
+    tokens = bootstrap_tokens(session, bootstrap_url)
+
+    query = json.dumps({
+        **PROVIDER_VARIABLES,
+        **variables,
+        'count': limit,
+        'cursor': None,
+        'scale': 1,
+        'useDefaultActor': False,
+    })
+
+    text = post_graphql(session, friendly_name, doc_id, query, tokens, bootstrap_url)
+    stories, page_info = _parse_graphql_stream(text)
+    if page_info is not None:
+        return stories
+
+    error = _graphql_rejection(text, friendly_name, doc_id)
+    if not isinstance(error, FacebookTokenStale):
+        raise error
+
+    logger.info('%s: stale tokens, reissuing once with fresh ones', friendly_name)
+    tokens = bootstrap_tokens(session, bootstrap_url)
+    text = post_graphql(session, friendly_name, doc_id, query, tokens, bootstrap_url)
+    stories, page_info = _parse_graphql_stream(text)
     if page_info is None:
+        # Second attempt failed too: report the original diagnosis rather than a
+        # generic one, so the operator sees the cause and not just the symptom.
         raise _graphql_rejection(text, friendly_name, doc_id)
     return stories
 
@@ -701,8 +966,29 @@ _LOGIN_MARKERS = (
 )
 
 
+# Markers indicating the per-page CSRF tokens went stale while the cookies stayed valid.
+# This is the recoverable case: one fresh page load yields new tokens.
+_TOKEN_MARKERS = (
+    'csrf',
+    'invalidlsd',
+    'lsdmissing',
+    'invalidtoken',
+    'dtsgexpired',
+)
+
 def _graphql_rejection(text, friendly_name, doc_id):
-    """Build the most accurate exception for a declined GraphQL response."""
+    """Build the most accurate exception for a declined GraphQL response.
+
+    Mirrors the reverse-engineered error table. The distinctions matter because each
+    one needs a different response from the operator:
+
+    * empty body on HTTP 200 -> stale `lsd`/`fb_dtsg`. Recoverable in-process with a
+      fresh page load; nothing for the operator to do.
+    * token markers -> same, but Facebook said so explicitly.
+    * doc_id markers -> the hardcoded id rotated; needs a code change.
+    * login markers -> the cookie is dead; needs a re-export.
+    * anything else -> genuine throttling.
+    """
     message = ''
     try:
         errors = json.loads(text).get('errors') or []
@@ -714,6 +1000,23 @@ def _graphql_rejection(text, friendly_name, doc_id):
     # Compare on a normalized form: Facebook writes "log in", "login" and "log-in"
     # interchangeably, so plain substring checks produce false negatives.
     lowered = re.sub(r'[\s\-_]+', '', message.lower())
+    body = text.strip()
+
+    # An empty 200 is the stale-token signature, confirmed against a live session: a
+    # deliberately bogus `lsd`/`fb_dtsg` yields HTTP 200 with a zero-byte body. It used
+    # to be reported as a rate limit, which sent operators chasing an IP problem that
+    # did not exist.
+    if not body:
+        return FacebookTokenStale(
+            f'{friendly_name} returned an empty body (HTTP 200) — the per-page lsd/fb_dtsg '
+            'tokens are stale. This is recoverable: the next page load issues new ones.'
+        )
+
+    if any(marker in lowered for marker in _TOKEN_MARKERS):
+        return FacebookTokenStale(
+            f'Facebook rejected the request tokens for {friendly_name}: {message!r}. '
+            'The lsd/fb_dtsg tokens are stale; a fresh page load reissues them.'
+        )
 
     if any(marker in lowered for marker in _DOC_ID_MARKERS):
         # A code-level problem, not an operator-level one. Say so explicitly so nobody
@@ -731,12 +1034,10 @@ def _graphql_rejection(text, friendly_name, doc_id):
         )
 
     detail = f' Facebook said: {message!r}.' if message else ''
-    if not text.strip():
-        detail += ' The response body was empty, which usually means rate limiting.'
     return FacebookRateLimited(
         'Facebook declined the GraphQL request. This is usually rate limiting, an expired '
         f'FACEBOOK_COOKIE, or a rotated doc_id.{detail} '
-        f'Response started with: {text[:200]!r}'
+        f'Response started with: {body[:200]!r}'
     )
 
 
@@ -1020,7 +1321,9 @@ async def _enrich_marketplace_listings(listings, cookie, concurrency):
     concurrency = max(1, min(int(concurrency), MAX_DETAIL_CONCURRENCY))
     semaphore = asyncio.Semaphore(concurrency)
     session = curl_requests.AsyncSession(impersonate=IMPERSONATE)
-    session.headers.update({'cookie': cookie} if cookie else {})
+    # Same jar treatment as the sync session: seeding the jar (not a pinned header)
+    # keeps these requests consistent with the ones that already warmed the cookie up.
+    _seed_session_cookies(session, cookie)
     try:
         results = await asyncio.gather(*(
             _fetch_marketplace_item_details(session, listing.get('id'), semaphore)

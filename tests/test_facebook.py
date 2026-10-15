@@ -718,6 +718,353 @@ class SessionCacheTests(unittest.TestCase):
         finally:
             u.reset_sessions()
 
+class TokenHarvestTests(unittest.TestCase):
+    """Token extraction, including the reverse-engineered fallback patterns."""
+
+    def test_comet_shape_is_parsed(self):
+        tokens = u.extract_tokens(FAKE_PAGE_HTML)
+        self.assertEqual(tokens['lsd'], 'test-lsd-token')
+        self.assertEqual(tokens['fb_dtsg'], 'test-dtsg')
+
+    def test_jazoest_is_computed_when_the_html_omits_it(self):
+        """The checksum appears only inside a URL the bundle may stop emitting."""
+        html = '"DTSGInitialData",[],{"token":"abc"}'
+        tokens = u.extract_tokens(html)
+        self.assertEqual(tokens['jazoest'], '2' + str(sum(ord(c) for c in 'abc')))
+
+    def test_computed_jazoest_matches_the_scraped_one(self):
+        """Verified against a live page: both forms agree."""
+        html = '"DTSGInitialData",[],{"token":"x"} jazoest=%s' % (
+            '2' + str(sum(ord(c) for c in 'x')))
+        tokens = u.extract_tokens(html)
+        self.assertEqual(tokens['jazoest'], '2' + str(sum(ord(c) for c in 'x')))
+
+    def test_legacy_form_input_shape_is_accepted(self):
+        """A bundle swap to the legacy markup must not blank the tokens out."""
+        html = '<input name="fb_dtsg" value="legacy-dtsg"><input name="lsd" value="legacy-lsd">'
+        tokens = u.extract_tokens(html)
+        self.assertEqual(tokens['fb_dtsg'], 'legacy-dtsg')
+        self.assertEqual(tokens['lsd'], 'legacy-lsd')
+
+    def test_revision_fields_are_extracted_but_never_sent(self):
+        html = ('"client_revision":1050469598 "hsi":"7696914156676409902" '
+                '"haste_session":"20741.HYP:comet_pkg.2.1...0"')
+        tokens = u.extract_tokens(html)
+        self.assertEqual(tokens['rev'], '1050469598')
+        self.assertEqual(tokens['hsi'], '7696914156676409902')
+        self.assertEqual(tokens['hs'], '20741.HYP:comet_pkg.2.1...0')
+
+    def test_jazoest_for_handles_missing_dtsg(self):
+        self.assertIsNone(u.jazoest_for(None))
+        self.assertIsNone(u.jazoest_for(''))
+
+
+class ErrorModeTests(unittest.TestCase):
+    """The reverse-engineered error table, which drives the operator's next action."""
+
+    doc_id = '28844200915213260'
+
+    def classify(self, text):
+        return u._graphql_rejection(text, 'SomeQuery', self.doc_id)
+
+    def test_empty_body_is_stale_tokens_not_a_rate_limit(self):
+        """The regression: a zero-byte 200 was reported as throttling.
+
+        Confirmed against a live session — a bogus lsd/fb_dtsg yields HTTP 200 with an
+        empty body. Calling that a rate limit sends the operator chasing an IP problem
+        that does not exist.
+        """
+        error = self.classify('')
+        self.assertIsInstance(error, u.FacebookTokenStale)
+        self.assertIn('lsd', str(error))
+
+    def test_whitespace_only_body_is_also_stale(self):
+        self.assertIsInstance(self.classify('  \n '), u.FacebookTokenStale)
+
+    def test_csrf_marker_is_stale_tokens(self):
+        error = self.classify('{"errors":[{"message":"CSRF token invalid"}]}')
+        self.assertIsInstance(error, u.FacebookTokenStale)
+
+    def test_rotated_doc_id_is_still_reported_as_a_code_problem(self):
+        error = self.classify('{"errors":[{"message":"Unknown document id"}]}')
+        self.assertIsInstance(error, u.FacebookRateLimited)
+        self.assertNotIsInstance(error, u.FacebookTokenStale)
+        self.assertIn('doc_id', str(error))
+
+    def test_login_required_is_a_session_problem(self):
+        error = self.classify('{"errors":[{"message":"Please log in to continue"}]}')
+        self.assertIsInstance(error, u.FacebookSessionExpired)
+
+    def test_unknown_error_is_a_rate_limit(self):
+        error = self.classify('{"errors":[{"message":"Something else entirely"}]}')
+        self.assertIsInstance(error, u.FacebookRateLimited)
+        self.assertNotIsInstance(error, u.FacebookTokenStale)
+
+    def test_stale_tokens_still_map_to_503(self):
+        """It subclasses the rate-limit error so routes keep answering 503."""
+        self.assertTrue(issubclass(u.FacebookTokenStale, u.FacebookRateLimited))
+
+
+class StaleTokenRetryTests(FacebookTestBase):
+    """A stale-token rejection must be reissued once with fresh tokens."""
+
+    def test_retry_succeeds_after_a_stale_first_attempt(self):
+        session = FakeSession(page_html=FAKE_PAGE_HTML)
+
+        responses = [FakeResponse(''), FakeResponse(ndjson_feed([make_story('recovered')]))]
+
+        def post(url, **kwargs):
+            session.post_calls.append((url, kwargs))
+            return responses.pop(0)
+
+        session.post = post
+        p1, p2 = self.patch_network(session)
+        with p1, p2:
+            stories = u.fetch_stories('Q', '1', {'id': '1'}, 5)
+        self.assertEqual(len(stories), 1)
+        self.assertEqual(len(session.post_calls), 2, 'the query must be reissued once')
+
+    def test_retry_keeps_the_header_contract_in_sync(self):
+        """x-fb-lsd must mirror the form field on the retry too."""
+        session = FakeSession(page_html=FAKE_PAGE_HTML)
+        responses = [FakeResponse(''), FakeResponse(ndjson_feed([make_story()]))]
+
+        def post(url, **kwargs):
+            session.post_calls.append((url, kwargs))
+            return responses.pop(0)
+
+        session.post = post
+        p1, p2 = self.patch_network(session)
+        with p1, p2:
+            u.fetch_stories('Q', '1', {'id': '1'}, 5)
+        for _url, kwargs in session.post_calls:
+            self.assertEqual(kwargs['headers']['x-fb-lsd'], kwargs['data']['lsd'])
+
+    def test_retry_happens_only_once(self):
+        """A second empty response is reported, not retried forever."""
+        session = FakeSession(page_html=FAKE_PAGE_HTML)
+        session.post_text = ''
+        p1, p2 = self.patch_network(session)
+        with p1, p2:
+            with self.assertRaises(u.FacebookTokenStale):
+                u.fetch_stories('Q', '1', {'id': '1'}, 5)
+        self.assertEqual(len(session.post_calls), 2)
+
+    def test_rate_limit_is_not_retried(self):
+        """Retrying throttling would deepen it."""
+        session = FakeSession(page_html=FAKE_PAGE_HTML, post_text=json.dumps(
+            {'errors': [{'message': 'rate limit exceeded'}]}))
+        p1, p2 = self.patch_network(session)
+        with p1, p2:
+            with self.assertRaises(u.FacebookRateLimited) as ctx:
+                u.fetch_stories('Q', '1', {'id': '1'}, 5)
+        self.assertNotIsInstance(ctx.exception, u.FacebookTokenStale)
+        self.assertEqual(len(session.post_calls), 1, 'must not reissue a throttled query')
+
+    def test_login_failure_is_not_retried(self):
+        session = FakeSession(page_html=FAKE_PAGE_HTML, post_text=json.dumps(
+            {'errors': [{'message': 'Please log in to continue'}]}))
+        p1, p2 = self.patch_network(session)
+        with p1, p2:
+            with self.assertRaises(u.FacebookSessionExpired):
+                u.fetch_stories('Q', '1', {'id': '1'}, 5)
+        self.assertEqual(len(session.post_calls), 1)
+
+    def test_retry_reuses_the_same_query_variables(self):
+        session = FakeSession(page_html=FAKE_PAGE_HTML)
+        responses = [FakeResponse(''), FakeResponse(ndjson_feed([make_story()]))]
+
+        def post(url, **kwargs):
+            session.post_calls.append((url, kwargs))
+            return responses.pop(0)
+
+        session.post = post
+        p1, p2 = self.patch_network(session)
+        with p1, p2:
+            u.fetch_stories('Q', '1', {'id': '7'}, 5)
+        first, second = (c[1]['data']['variables'] for c in session.post_calls)
+        self.assertEqual(json.loads(first)['id'], json.loads(second)['id'])
+
+
+class ParseStreamTests(unittest.TestCase):
+    """The NDJSON splitter, shared by the first attempt and the retry."""
+
+    def test_ignores_non_json_noise_lines(self):
+        text = 'for (;;);\n' + ndjson_feed([make_story()]) + '\nnot json at all'
+        stories, page_info = u._parse_graphql_stream(text)
+        self.assertEqual(len(stories), 1)
+        self.assertIsNotNone(page_info)
+
+    def test_empty_text_yields_nothing(self):
+        stories, page_info = u._parse_graphql_stream('')
+        self.assertEqual(stories, [])
+        self.assertIsNone(page_info)
+
+class CookieJarTests(unittest.TestCase):
+    """The cookie must live in a jar, not in a pinned Cookie header.
+
+    Facebook rotates `datr`/`fr`/`xs` mid-session and only communicates that through
+    Set-Cookie. A pinned header drops every rotation, so the stored value slowly stops
+    being the live one — which reads to the operator as "the spider got logged out
+    while my browser did not".
+    """
+
+    def setUp(self):
+        u.reset_sessions()
+
+    def tearDown(self):
+        u.reset_sessions()
+
+    def test_cookie_header_value_parses_into_pairs(self):
+        pairs = u.parse_cookie_header('c_user=100; xs=34%3Aabc%3A2 ')
+        self.assertEqual(pairs, [('c_user', '100'), ('xs', '34%3Aabc%3A2')])
+
+    def test_parse_tolerates_trailing_separator_and_blank_input(self):
+        self.assertEqual(u.parse_cookie_header('c_user=1;'), [('c_user', '1')])
+        self.assertEqual(u.parse_cookie_header(''), [])
+        self.assertEqual(u.parse_cookie_header(None), [])
+
+    def test_parse_keeps_the_value_verbatim(self):
+        """`xs` is percent-encoded; decoding it would change what Facebook receives."""
+        pairs = u.parse_cookie_header('xs=34%3A7k8d%3A2%3A1780')
+        self.assertEqual(pairs[0][1], '34%3A7k8d%3A2%3A1780')
+
+    def test_jar_is_seeded_from_the_env_value(self):
+        jar = u._get_cookie_jar('c_user=100; xs=tok')
+        self.assertEqual(jar.get('c_user'), '100')
+        self.assertEqual(jar.get('xs'), 'tok')
+
+    def test_jar_is_reused_per_cookie(self):
+        self.assertIs(u._get_cookie_jar('c_user=1'), u._get_cookie_jar('c_user=1'))
+        self.assertIsNot(u._get_cookie_jar('c_user=1'), u._get_cookie_jar('c_user=2'))
+
+    def test_reset_sessions_drops_the_jar_too(self):
+        first = u._get_cookie_jar('c_user=1')
+        u.reset_sessions()
+        self.assertIsNot(first, u._get_cookie_jar('c_user=1'))
+
+    def test_session_has_no_pinned_cookie_header(self):
+        """A pinned header would shadow the jar and reintroduce the logout bug."""
+        if not u.HAS_CURL_CFFI:
+            self.skipTest('curl_cffi is not installed in this environment')
+        session = u._new_session('c_user=100; xs=tok')
+        self.assertNotIn('cookie', {k.lower() for k in session.headers})
+        self.assertEqual(session.cookies.get('c_user'), '100')
+
+    def test_rotated_cookie_is_mirrored_into_the_shared_jar(self):
+        if not u.HAS_CURL_CFFI:
+            self.skipTest('curl_cffi is not installed in this environment')
+        from curl_cffi.requests.cookies import Cookies
+
+        u._get_cookie_jar('c_user=100; xs=old; datr=old')
+        session = mock.MagicMock()
+        session.cookies = Cookies()
+        response = mock.MagicMock()
+        rotated = Cookies()
+        rotated.set('xs', 'rotated', domain=u.COOKIE_DOMAIN)
+        rotated.set('datr', 'rotated-datr', domain=u.COOKIE_DOMAIN)
+        response.cookies = rotated
+
+        u._note_rotated_cookies(session, response)
+
+        jar = u._get_cookie_jar('c_user=100; xs=old; datr=old')
+        self.assertEqual(jar.get('xs'), 'rotated')
+        self.assertEqual(jar.get('datr'), 'rotated-datr')
+        self.assertEqual(jar.get('c_user'), '100')
+
+    def test_untracked_cookies_are_ignored(self):
+        """A cookie outside the rotation set must not be copied into the shared jar."""
+        if not u.HAS_CURL_CFFI:
+            self.skipTest('curl_cffi is not installed in this environment')
+        from curl_cffi.requests.cookies import Cookies
+
+        u._get_cookie_jar('c_user=100; xs=tok')
+        session = mock.MagicMock()
+        session.cookies = Cookies()
+        response = mock.MagicMock()
+        other = Cookies()
+        other.set('some_ui_pref', 'x', domain=u.COOKIE_DOMAIN)
+        response.cookies = other
+
+        u._note_rotated_cookies(session, response)
+
+        self.assertIsNone(u._get_cookie_jar('c_user=100; xs=tok').get('some_ui_pref'))
+
+    def test_renewed_xs_replaces_the_stored_session_secret(self):
+        """`xs` is the session secret: a renewed one must supersede the stored value."""
+        if not u.HAS_CURL_CFFI:
+            self.skipTest('curl_cffi is not installed in this environment')
+        self.assertIn('xs', u.ROTATED_COOKIE_NAMES)
+        from curl_cffi.requests.cookies import Cookies
+
+        u._get_cookie_jar('c_user=100; xs=old')
+        session = mock.MagicMock()
+        session.cookies = Cookies()
+        response = mock.MagicMock()
+        renewed = Cookies()
+        renewed.set('xs', 'renewed', domain=u.COOKIE_DOMAIN)
+        response.cookies = renewed
+
+        u._note_rotated_cookies(session, response)
+
+        self.assertEqual(u._get_cookie_jar('c_user=100; xs=old').get('xs'), 'renewed')
+
+    def test_response_without_cookies_is_a_noop(self):
+        session = mock.MagicMock()
+        session.cookies = None
+        u._note_rotated_cookies(session, mock.MagicMock())
+        u._note_rotated_cookies(mock.MagicMock(), None)
+
+    def test_renewed_cookie_is_used_by_the_next_request(self):
+        """End-to-end against a real local server: curl_cffi does not do this for us.
+
+        A MagicMock response would happily accept any assignment, so this drives an
+        actual curl_cffi session. The response's Set-Cookie must reach the session jar
+        *and* the shared jar; otherwise the next request re-sends the stale `xs`, which
+        is the logout the tests above only model in the abstract.
+        """
+        if not u.HAS_CURL_CFFI:
+            self.skipTest('curl_cffi is not installed in this environment')
+        import threading
+        from http.server import BaseHTTPRequestHandler, HTTPServer
+
+        seen = []
+
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                seen.append(self.headers.get('Cookie'))
+                self.send_response(200)
+                self.send_header('Set-Cookie', 'xs=renewed; Domain=localhost; Path=/; HttpOnly')
+                self.send_header('Set-Cookie', 'datr=rotated-datr; Domain=localhost; Path=/')
+                self.end_headers()
+                self.wfile.write(b'ok')
+
+            def log_message(self, *args):
+                pass
+
+        server = HTTPServer(('127.0.0.1', 0), Handler)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+
+        cookie = 'c_user=100; xs=old; datr=old'
+        original_domain = u.COOKIE_DOMAIN
+        u.COOKIE_DOMAIN = 'localhost'
+        try:
+            with mock.patch.dict('os.environ', {'FACEBOOK_COOKIE': cookie}):
+                session = u._get_session(cookie)
+                u._request_with_retry(
+                    session, 'get', f'http://localhost:{server.server_port}/me')
+                u._request_with_retry(
+                    session, 'get', f'http://localhost:{server.server_port}/me')
+        finally:
+            u.COOKIE_DOMAIN = original_domain
+            server.shutdown()
+
+        self.assertIn('xs=old', seen[0])
+        self.assertIn('xs=renewed', seen[1],
+                      'the renewed session secret must be sent on the next request')
+        self.assertIn('datr=rotated-datr', seen[1])
+        self.assertEqual(u._get_cookie_jar(cookie).get('xs'), 'renewed')
+
 
 class LiteModeTests(FacebookTestBase):
     """Vercel/lite installs omit curl_cffi; that must degrade cleanly, not 500."""

@@ -84,7 +84,7 @@ Some spiders need credentials or a proxy for upstreams that are geo-restricted o
 
 | Variable | Used by | Purpose |
 |---|---|---|
-| `FACEBOOK_COOKIE` | `/facebook/page/:id`, `/facebook/group/:id`, `/facebook/group/:id/user/:user_id`, `/facebook/marketplace/:query`, `/facebook/marketplace/seller/:seller_id` | **Required.** Facebook rejects ordinary HTTP clients on TLS fingerprint, so requests are sent via `curl_cffi` impersonating Chrome, and an authenticated session is needed on top. Use the `c_user=...; xs=...` pair from a logged-in browser, e.g. `c_user=1234567890; xs=12%3Aabcdef...`. Marketplace results are scoped to the account's own region unless `?location=` is given. |
+| `FACEBOOK_COOKIE` | `/facebook/page/:id`, `/facebook/group/:id`, `/facebook/group/:id/user/:user_id`, `/facebook/marketplace/:query`, `/facebook/marketplace/seller/:seller_id` | **Required.** Facebook rejects ordinary HTTP clients on TLS fingerprint, so requests are sent via `curl_cffi` impersonating Chrome, and an authenticated session is needed on top. Use the `c_user=...; xs=...` pair from a logged-in browser, e.g. `c_user=1234567890; xs=12%3Aabcdef...`. Marketplace results are scoped to the account's own region unless `?location=` is given. See [why the cookie goes stale](#why-the-cookie-goes-stale) for what this value does and does not control. |
 | `GENIETV_PROXY` | `/genietv/*` | HTTP(S) proxy with a Korean egress; the KT hosts are geo-restricted. |
 | `SECRET_KEY` | Flask sessions | Overrides the insecure built-in development default. |
 
@@ -252,6 +252,117 @@ Some notes on reliability:
   placeholder listings, which is why an unrelated query returns an empty feed.
 - **Host IP matters.** Shared datacenter IPs (including Vercel's) are rate-limited
   aggressively. See the note below if you see frequent 503s.
+
+#### Why the cookie goes stale
+
+A Facebook feed can die with HTTP 503 saying the cookie is expired even though the same
+account is still logged in in your browser. That is usually not Facebook revoking the
+login — it is the spider throwing away the renewal Facebook already sent.
+
+Facebook renews `xs` (the session secret) and the browser-state cookies (`datr`, `fr`,
+`wd`, …) mid-session, and communicates that **only** through `Set-Cookie` response
+headers. A browser applies them silently, which is why it never logs out. A scraper that
+sends a frozen `Cookie:` header keeps re-sending the value it was configured with, so
+after enough renewals the stored `xs` is no longer the live one.
+
+Two details make this worse than it looks, and both are handled here:
+
+- **`curl_cffi` does not merge `Set-Cookie` into the session jar.** Unlike
+  `requests`, a `curl_cffi` session keeps the stale value after a response that set a new
+  one (verified against curl_cffi 0.16). The response object carries the new cookies;
+  adopting them is the caller's job.
+- **A pinned `cookie` header shadows the jar entirely**, so even a correctly populated
+  jar would never be used.
+
+So `FACEBOOK_COOKIE` is treated as a **seed**, not as the ongoing session. It is parsed
+into a cookie jar, the jar is what requests are sent from, and every response's renewed
+`c_user`/`xs`/`datr`/`fr`/… is copied back into both the session jar and the shared jar.
+`curl_cffi` is used in its default `impersonate="chrome"` mode rather than with a
+hand-pinned `Cookie` header, which is also closer to what a real browser sends.
+
+What this does **not** fix, and why you may still need to re-export:
+
+- **A login from another device/network can invalidate `c_user`+`xs`.** That is Facebook
+  revoking, not us dropping; the log line below will stop rotating and the feed 503s.
+- **A wrong-context renewal is worse than none.** Cookies are only adopted once the
+  session is working, and they are re-adopted only for Facebook's own domain — a
+  response from somewhere else cannot poison the jar.
+- **IP reputation is still the dominant factor.** If Facebook checkpoints the account,
+  no amount of cookie handling helps; see the note above about datacenter IPs.
+
+When a renewal happens it is logged at debug level, which is the cheapest way to tell
+"the session is alive" from "the session is dead":
+
+```python
+import logging
+logging.getLogger('rsshub.spiders.facebook.utils').setLevel(logging.DEBUG)
+# → Facebook renewed cookie(s): datr, xs
+```
+
+A `datr`/`xs` that stops being renewed while the feed still returns 503 means the session
+really is gone and `FACEBOOK_COOKIE` needs re-exporting.
+
+> **Measured, not assumed.** Across live page, group and Marketplace requests with a real
+> session, Facebook sent **no** `Set-Cookie` at all — `datr` and `xs` were unchanged. So
+> the renewal handling above is a correctness fix for a real hazard (and `curl_cffi`
+> really does drop renewals when they occur), but it is *not* the usual cause of a 503.
+> The usual cause is the per-page token problem below, or IP reputation.
+
+#### Stale per-page tokens (the empty-body 503)
+
+Facebook issues `lsd` and `fb_dtsg` on **every page load**, and accepts them for only a
+bounded window. When they age out, Facebook answers the GraphQL call with **HTTP 200 and a
+zero-byte body** — no error message, no status code, nothing to distinguish it from a
+rate limit. Verified directly: a deliberately bogus `lsd`/`fb_dtsg` produces exactly that
+response.
+
+The spider used to report that as *"Facebook declined the GraphQL request. This is usually
+rate limiting"*, which sent you chasing an IP problem that did not exist. It now:
+
+- classifies an empty body (or a CSRF/token marker) as `FacebookTokenStale`;
+- **retries once with freshly harvested tokens**, which is what fixes it;
+- only retries that case — a real rate limit or a login failure is raised immediately,
+  because reissuing a throttled query makes throttling worse.
+
+A live check confirms the recovery: poisoning the first token harvest made the request
+fail exactly as Facebook would, and the retry then returned the stories normally.
+
+The operator-facing distinctions are now:
+
+| Facebook's answer | Diagnosis | What fixes it |
+|---|---|---|
+| HTTP 200, empty body | `FacebookTokenStale` | automatic — one fresh page load |
+| `CSRF`/token marker in `errors[]` | `FacebookTokenStale` | automatic |
+| `Unknown document id`, `missing_required_variable_value` | rotated `doc_id` | **code change** — update `DOC_IDS` |
+| `Login required`, `checkpoint` | `FacebookSessionExpired` | re-export `FACEBOOK_COOKIE` |
+| anything else | `FacebookRateLimited` | lower the request rate / change egress IP |
+
+#### What the reverse-engineered client does *not* buy you
+
+An unofficial client published a HAR-derived field list for Facebook's internal GraphQL
+(`av`, `__user`, `__a`, `__req`, `__rev`, `__hsi`, `__crn`, `__comet_req`, …). Those fields
+were tested against the routes here, on a live session, and **none of them change the
+result**:
+
+- the full field set returned **the same story ids** as the six fields this module already
+  sends, with ~25% more response bytes;
+- `__crn` and `__comet_req` changed nothing for the page or group queries;
+- the pinned `__rev` in that client (`1037953373`) was ~12 million revisions behind the live
+  page — advertising a stale client build is worse than advertising none, so revisions are
+  read but never sent.
+
+The `av`/`__user` pair *is* required for an **anonymous** request, which is why it appears
+in HAR captures; an authenticated session does not need it. `__crn` is reported to matter
+for the Marketplace **item detail** query specifically, so if `/facebook/marketplace/*`
+ever returns **HTTP 500** (not 503, not empty), check `__crn` before blaming `doc_id`.
+
+Two things *were* adopted, because they measured as real:
+
+- **`jazoest` is now computed from `fb_dtsg`** rather than scraped. The value in the HTML
+  and the computed value match exactly; computing it survives the bundle dropping the URL
+  that carried it.
+- **Fallback token patterns** for the legacy/mobile markup shape, so a bundle swap does not
+  silently blank the tokens.
 
 #### Setting `FACEBOOK_COOKIE`
 

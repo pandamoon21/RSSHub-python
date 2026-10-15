@@ -1918,6 +1918,8 @@
         <p class="card-text">Parameter: <code>limit</code> Optional number of posts, defaults to 21 (maximum 100).</p>
         <p class="card-text"><span class="badge badge-warning">Login required</span> <code>FACEBOOK_COOKIE</code> is required (only the <code>c_user</code> and <code>xs</code> cookies are needed). Facebook rejects plain HTTP clients on TLS fingerprint and serves a login wall without a session. A missing or expired cookie returns HTTP 503; an unknown page returns 404.</p>
         <p class="card-text">The value is plain text, <strong>not</strong> JSON. Convert a browser export with <code>python fb_cookie_from_export.py fb_cookies.json</code> — see the README for details.</p>
+        <p class="card-text">The value is a <strong>seed</strong>: it is loaded into a cookie jar, and any cookie Facebook renews mid-session (<code>xs</code>, <code>datr</code>, <code>fr</code>, …) is adopted from the response. That is why the spider does not go stale the way a loop with a fixed <code>Cookie:</code> header does — see <em>Why the cookie goes stale</em> in the README for the two library details involved.</p>
+        <p class="card-text"><span class="badge badge-info">self-healing</span> Facebook's per-page <code>lsd</code>/<code>fb_dtsg</code> tokens expire, and when they do Facebook answers with <strong>HTTP 200 and an empty body</strong> rather than an error. That is detected as a token problem and retried once with fresh tokens, so it does not surface as a mysterious 503. A rotated <code>doc_id</code> or a dead cookie is reported distinctly instead — see <em>Stale per-page tokens</em> in the README for the diagnosis table.</p>
     </div>
 </div>
 <br>
